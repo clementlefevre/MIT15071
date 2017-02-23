@@ -1,0 +1,39 @@
+---
+title: "NBA Moneyball"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(ggplot2)
+df_train = read.csv('2_LinearModel/NBA_train.csv')
+str(df_train)
+table(df_train$Playoffs)
+typeof(df_train)
+```
+```{python}
+import pandas as pd
+df = pd.Dataframe()
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+df_train$PTSDiff = df_train$PTS - df_train$oppPTS
+#plot(df_train$PTSDiff,df_train$W)
+#cor(df_train[. -c('Team')])
+colo <-colnames(df_train)
+col_num<-colo[colo!='Team']
+cor_mat<-(cor(df_train[c(col_num)]))
+library(reshape2)
+melted_cormat <- melt(cor_mat)
+library(ggplot2)
+ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+```
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
