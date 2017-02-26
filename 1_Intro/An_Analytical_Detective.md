@@ -247,7 +247,8 @@ which.max(table1[,2])
 
 ```r
 df_p<-tbl_df(df)
-groupy <- df_p %>% group_by(Month,Arrest) %>% tally() %>% spread(Arrest, n, fill=0)
+groupy <- df_p %>% group_by(Month,Arrest) %>% summarise(n()) %>% spread( Arrest,`n()` ,fill=0)
+
 
 groupy<-groupy%>%rowwise()%>%mutate(ratio = `TRUE`/sum(`FALSE`,`TRUE`)*100)
 groupy %>% arrange(desc(`TRUE`)) %>% filter(row_number()==1 | row_number()==n())
@@ -259,5 +260,13 @@ groupy %>% arrange(desc(`TRUE`)) %>% filter(row_number()==1 | row_number()==n())
 ##    <chr>   <dbl>  <dbl>    <dbl>
 ## 1 Januar   14612   1435 8.942481
 ## 2    Mai   14848   1187 7.402557
+```
+
+```r
+groupy %>% arrange(desc(ratio)) %>% select()
+```
+
+```
+## # A tibble: 12 × 0
 ```
 

@@ -226,7 +226,8 @@ table1</code></pre>
 <pre><code>## Januar 
 ##      5</code></pre>
 <pre class="r"><code>df_p&lt;-tbl_df(df)
-groupy &lt;- df_p %&gt;% group_by(Month,Arrest) %&gt;% tally() %&gt;% spread(Arrest, n, fill=0)
+groupy &lt;- df_p %&gt;% group_by(Month,Arrest) %&gt;% summarise(n()) %&gt;% spread( Arrest,`n()` ,fill=0)
+
 
 groupy&lt;-groupy%&gt;%rowwise()%&gt;%mutate(ratio = `TRUE`/sum(`FALSE`,`TRUE`)*100)
 groupy %&gt;% arrange(desc(`TRUE`)) %&gt;% filter(row_number()==1 | row_number()==n())</code></pre>
@@ -235,6 +236,8 @@ groupy %&gt;% arrange(desc(`TRUE`)) %&gt;% filter(row_number()==1 | row_number()
 ##    &lt;chr&gt;   &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;
 ## 1 Januar   14612   1435 8.942481
 ## 2    Mai   14848   1187 7.402557</code></pre>
+<pre class="r"><code>groupy %&gt;% arrange(desc(ratio)) %&gt;% select()</code></pre>
+<pre><code>## # A tibble: 12 × 0</code></pre>
 
 
 

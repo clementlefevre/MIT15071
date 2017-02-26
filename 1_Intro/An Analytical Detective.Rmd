@@ -1,8 +1,9 @@
 ---
 title: "Assignment 1 _An Analytical Detective"
-output: 
-  html_document:
-    keep_md: true
+# output: 
+#   html_:
+#     keep_md: true
+output: html_notebook
 ---
 
 
@@ -17,6 +18,8 @@ How many rows of data (observations) are in this dataset?
 ```{r}
 require(dplyr)
 require(tidyr)
+require(ggplot2)
+require(lubridate)
 
 df <- read.csv('mvtWeek1.csv')
 dim(df)
@@ -94,6 +97,7 @@ In which month did the fewest motor vehicle thefts occur?
 ```{r}
 df$Month = months(DateYear)
 df$Weekday = weekdays(DateYear)
+df$Date = DateYear
 sort(table(df$Month),decreasing = F)
 ```
 Problem 2.4 - Understanding Dates in R
@@ -113,9 +117,142 @@ which.max(table1[,2])
 
 ```{r}
 df_p<-tbl_df(df)
-groupy <- df_p %>% group_by(Month,Arrest) %>% tally() %>% spread(Arrest, n, fill=0)
+groupy <- df_p %>% group_by(Month,Arrest) %>% summarise(n()) %>% spread( Arrest,`n()` ,fill=0)
+
 
 groupy<-groupy%>%rowwise()%>%mutate(ratio = `TRUE`/sum(`FALSE`,`TRUE`)*100)
 groupy %>% arrange(desc(`TRUE`)) %>% filter(row_number()==1 | row_number()==n())
+groupy %>% arrange(desc(ratio)) %>% filter(`TRUE` == max(`TRUE`)) 
+```
+**Problem 3.1 - Visualizing Crime Trends**
+3 points possible (graded)
+Now, let's make some plots to help us better understand how crime has changed over time in Chicago. Throughout this problem, and in general, you can save your plot to a file. For more information, this website very clearly explains the process.
+
+First, let's make a histogram of the variable Date. We'll add an extra argument, to specify the number of bars we want in our histogram. In your R console, type
+
+hist(mvt$Date, breaks=100)
+
+Looking at the histogram, answer the following questions.
+
+In general, does it look like crime increases or decreases from 2002 - 2012?
+
+
+Increases
+Decreases
+unanswered
+In general, does it look like crime increases or decreases from 2005 - 2008?
+
+
+Increases
+Decreases
+unanswered
+In general, does it look like crime increases or decreases from 2009 - 2011?
+
+
+Increases
+Decreases
+```{r}
+p<-ggplot(df, aes(x=Date,fill=Arrest)) + geom_histogram(binwidth=50) 
+p+geom_vline(xintercept = c(as.numeric(ymd(20080101)),
+                            as.numeric(ymd(20090101))),linetype="dotted")
+
+
+```
+Problem 3.2 - Visualizing Crime Trends
+1 point possible (graded)
+Now, let's see how arrests have changed over time. Create a boxplot of the variable "Date", sorted by the variable "Arrest" (if you are not familiar with boxplots and would like to learn more, check out this tutorial). In a boxplot, the bold horizontal line is the median value of the data, the box shows the range of values between the first quartile and third quartile, and the whiskers (the dotted lines extending outside the box) show the minimum and maximum values, excluding any outliers (which are plotted as circles). Outliers are defined by first computing the difference between the first and third quartile values, or the height of the box. This number is called the Inter-Quartile Range (IQR). Any point that is greater than the third quartile plus the IQR or less than the first quartile minus the IQR is considered an outlier.
+
+Does it look like there were more crimes for which arrests were made in the first half of the time period or the second half of the time period? (Note that the time period is from 2001 to 2012, so the middle of the time period is the beginning of 2007.)
+```{r}
+ggplot(df, aes(x=Arrest, y=Date, fill=Arrest)) + geom_boxplot()
+
 ```
 
+Problem 3.3 - Visualizing Crime Trends
+2.0 points possible (graded)
+Let's investigate this further. Use the table function for the next few questions.
+
+For what proportion of motor vehicle thefts in 2001 was an arrest made?
+
+Note: in this question and many others in the course, we are asking for an answer as a proportion. Therefore, your answer should take a value between 0 and 1.
+
+```{r}
+groupyto<-df %>% group_by(Year,Arrest)%>%summarise(n()) %>%spread(Arrest,`n()`)%>% rowwise() %>% mutate(ratio = `TRUE`/(`FALSE`+`TRUE`)*100) 
+groupyto%>% filter(Year == 2001)
+```
+**Problem 3.4 - Visualizing Crime Trends**
+1 point possible (graded)
+For what proportion of motor vehicle thefts in 2007 was an arrest made?
+```{r}
+groupyto %>% filter(Year == 2007)
+```
+**Problem 3.5 - Visualizing Crime Trends**
+1 point possible (graded)
+For what proportion of motor vehicle thefts in 2012 was an arrest made?
+```{r}
+groupyto %>% filter(Year == 2012)
+```
+**Problem 4.1 - Popular Locations**
+1 point possible (graded)
+Analyzing this data could be useful to the Chicago Police Department when deciding where to allocate resources. If they want to increase the number of arrests that are made for motor vehicle thefts, where should they focus their efforts?
+
+We want to find the top five locations where motor vehicle thefts occur. If you create a table of the LocationDescription variable, it is unfortunately very hard to read since there are 78 different locations in the data set. By using the sort function, we can view this same table, but sorted by the number of observations in each category. In your R console, type:
+
+sort(table(mvt$LocationDescription))
+
+Which locations are the top five locations for motor vehicle thefts, excluding the "Other" category? You should select 5 of the following options.
+
+
+```{r}
+groupyloc<- df %>% group_by(LocationDescription) %>% summarise(n()) %>% arrange(desc(`n()`)) %>%  filter(LocationDescription!='OTHER') %>%filter(row_number()<6)
+groupyloc
+```
+
+**Problem 4.2 - Popular Locations**
+1 point possible (graded)
+Create a subset of your data, only taking observations for which the theft happened in one of these five locations, and call this new data set "Top5". To do this, you can use the | symbol. In lecture, we used the & symbol to use two criteria to make a subset of the data. To only take observations that have a certain value in one variable or the other, the | character can be used in place of the & symbol. This is also called a logical "or" operation.
+
+Alternately, you could create five different subsets, and then merge them together into one data frame using rbind.
+
+How many observations are in Top5?
+
+```{r}
+groupyloc <- rename(groupyloc, 'Sumo'=`n()`)
+
+colnames(groupyloc)
+View(summarise(groupyloc,sum(Sumo)))
+
+```
+
+**Problem 4.3 - Popular Locations**
+2.0 points possible (graded)
+R will remember the other categories of the LocationDescription variable from the original dataset, so running table(Top5$LocationDescription) will have a lot of unnecessary output. To make our tables a bit nicer to read, we can refresh this factor variable. In your R console, type:
+
+Top5$LocationDescription = factor(Top5$LocationDescription)
+
+If you run the str or table function on Top5 now, you should see that LocationDescription now only has 5 values, as we expect.
+
+Use the Top5 data frame to answer the remaining questions.
+
+One of the locations has a much higher arrest rate than the other locations. Which is it? Please enter the text in exactly the same way as how it looks in the answer options for Problem 4.1.
+
+```{r}
+top5Locations <-df %>% filter(LocationDescription %in% as.vector(unique(groupyloc$LocationDescription)))
+
+groupytop5loc<- top5Locations %>%  group_by(LocationDescription) %>% summarise(Ratio = mean(Arrest)*100,max(Arrest)) %>% print
+
+
+```
+Problem 4.4 - Popular Locations
+1 point possible (graded)
+On which day of the week do the most motor vehicle thefts at gas stations happen?
+```{r}
+top5Locations %>% filter(LocationDescription=='GAS STATION') %>% group_by(Weekday) %>% summarise(counto=n()) %>% arrange(desc(counto)) %>% filter(row_number()==1)
+
+```
+Problem 4.5 - Popular Locations
+1 point possible (graded)
+On which day of the week do the fewest motor vehicle thefts in residential driveways happen?
+```{r}
+top5Locations %>% filter(LocationDescription=='DRIVEWAY - RESIDENTIAL') %>% group_by(Weekday) %>% summarise(counto=n()) %>% arrange(desc(counto)) %>% filter(row_number()==n())
+```
