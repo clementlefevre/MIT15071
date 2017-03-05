@@ -16,7 +16,7 @@ df <- data.frame(date=c("31/08/2011", "31/07/2011", "30/06/2011"),              
 
 dateConvert<-as.Date(df$date,'%d/%m/%Y')
 
-df<-mutate(df,dateC=as.character(dateConvert))
+df<-mutate(df,dateC=dateConvert)
 #with Date format -> NOK
 
 df
