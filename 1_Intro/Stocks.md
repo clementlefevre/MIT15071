@@ -315,4 +315,16 @@ df.all.gathered$Date<as.Date('2005-01-01'))), aes(x = Date, y = price, color = c
 1 point possible (graded)
 Which stock reaches the highest value in the time period 1995-2005?
 
+Problem 4.1 - Monthly Trends
+1 point possible (graded)
+Lastly, let's see if stocks tend to be higher or lower during certain months. Use the tapply command to calculate the mean stock price of IBM, sorted by months. To sort by months, use
+
+months(IBM$Date)
+
+as the second argument of the tapply function.
+
+For IBM, compare the monthly averages to the overall average stock price. In which months has IBM historically had a higher stock price (on average)? Select all that apply.
+
+
+
 
