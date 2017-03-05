@@ -1,21 +1,107 @@
----
-title: "R Notebook"
-output:
-  html_document:
-    keep_md: true
----
+# R Notebook
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-```{r}
+
+```r
 require(dplyr)
+```
+
+```
+## Loading required package: dplyr
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+```
+
+```
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
 require(plyr)
+```
+
+```
+## Loading required package: plyr
+```
+
+```
+## -------------------------------------------------------------------------
+```
+
+```
+## You have loaded plyr after dplyr - this is likely to cause problems.
+## If you need functions from both plyr and dplyr, please load plyr first, then dplyr:
+## library(plyr); library(dplyr)
+```
+
+```
+## -------------------------------------------------------------------------
+```
+
+```
+## 
+## Attaching package: 'plyr'
+```
+
+```
+## The following objects are masked from 'package:dplyr':
+## 
+##     arrange, count, desc, failwith, id, mutate, rename, summarise,
+##     summarize
+```
+
+```r
 require(tidyr)
+```
+
+```
+## Loading required package: tidyr
+```
+
+```r
 require(ggplot2)
+```
+
+```
+## Loading required package: ggplot2
+```
+
+```r
 require(lubridate)
+```
 
+```
+## Loading required package: lubridate
+```
 
+```
+## 
+## Attaching package: 'lubridate'
+```
+
+```
+## The following object is masked from 'package:plyr':
+## 
+##     here
+```
+
+```
+## The following object is masked from 'package:base':
+## 
+##     date
 ```
 **Problem 1.1 - Summary Statistics**
 1 point possible (graded)
@@ -36,8 +122,8 @@ The first argument to the as.Date function is the variable we want to convert, a
 Our five datasets all have the same number of observations. How many observations are there in each data set?
 
 
-```{r}
 
+```r
 df_Boeing = read.csv('BoeingStock.csv')
 df_Coca = read.csv('CocaColaStock.csv')
 df_Procter = read.csv('ProcterGambleStock.csv')
@@ -51,56 +137,98 @@ for (namo in names(dfos)){
   dfos[[namo]]$Date = as.Date(strptime(dfos[[namo]]$Date,"%m/%d/%y"))
   print(dim(dfos[[namo]]))
 }
+```
 
+```
+## [1] 480   2
+## [1] 480   2
+## [1] 480   2
+## [1] 480   2
+## [1] 480   2
 ```
 
 **Problem 1.2 - Summary Statistics**
 1 point possible (graded)
 What is the earliest year in our datasets?
 
-```{r}
+
+```r
 min(dfos$Boeing$Date)
+```
+
+```
+## [1] "1970-01-01"
 ```
 
 Problem 1.3 - Summary Statistics
 1 point possible (graded)
 What is the latest year in our datasets?
 
-```{r}
+
+```r
 max(dfos$Boeing$Date)
+```
+
+```
+## [1] "2009-12-01"
 ```
 
 Problem 1.4 - Summary Statistics
 1 point possible (graded)
 What is the mean stock price of IBM over this time period?
-```{r}
+
+```r
 mean(dfos$Boeing$StockPrice)
+```
+
+```
+## [1] 46.59293
 ```
 roblem 1.5 - Summary Statistics
 1 point possible (graded)
 What is the minimum stock price of General Electric (GE) over this time period?
 
-```{r}
+
+```r
 min(dfos$GE$StockPrice)
+```
+
+```
+## [1] 9.293636
 ```
 
 Problem 1.6 - Summary Statistics
 1 point possible (graded)
 What is the maximum stock price of Coca-Cola over this time period?
-```{r}
+
+```r
 max(dfos$Coca$StockPrice)
+```
+
+```
+## [1] 146.5843
 ```
 Problem 1.7 - Summary Statistics
 1 point possible (graded)
 What is the median stock price of Boeing over this time period?
-```{r}
+
+```r
 median(dfos$Boeing$StockPrice)
+```
+
+```
+## [1] 44.8834
 ```
 Problem 1.8 - Summary Statistics
 1 point possible (graded)
 What is the standard deviation of the stock price of Procter & Gamble over this time period?
-```{r}
+
+```r
 sd(dfos$Boeing$StockPrice)
+```
+
+```
+## [1] 19.89184
 ```
 Problem 2.1 - Visualizing Stock Dynamics
 2 points possible (graded)
@@ -109,7 +237,8 @@ Let's plot the stock prices to see if we can visualize trends in stock prices du
 This plots our observations as points, but we would really like to see a line instead, since this is a continuous time period. To do this, add the argument type="l" to your plot command, and re-generate the plot (the character is quotes is the letter l, for line). You should now see a line plot of the Coca-Cola stock price.
 
 Around what year did Coca-Cola has its highest stock price in this time period?
-```{r}
+
+```r
 mergerFun <- function(x, y){
  
   df <- inner_join(x, y, by= "Date")
@@ -118,15 +247,29 @@ mergerFun <- function(x, y){
 df.all<-Reduce(mergerFun,dfos)
 colnames(df.all)<- c('Date',names(dfos))
 head(df.all)
+```
 
 ```
-```{r}
+## # A tibble: 6 × 6
+##         Date   Boeing     Coca   Procter       GE      IBM
+##       <date>    <dbl>    <dbl>     <dbl>    <dbl>    <dbl>
+## 1 1970-01-01 27.85381 83.36810 111.87429 74.25333 360.3190
+## 2 1970-02-01 22.38105 81.59105 111.45368 69.97684 346.7237
+## 3 1970-03-01 23.10524 81.33810 108.45143 72.15857 327.3457
+## 4 1970-04-01 21.57136 76.80591 106.28864 74.25273 319.8527
+## 5 1970-05-01 18.93286 69.27857  73.33286 66.66524 270.3752
+## 6 1970-06-01 15.44318 72.01545  48.31864 67.59318 267.2050
+```
+
+```r
 df.all.gathered <- gather(df.all,company,price, -Date)
 
 ggplot(df.all.gathered, aes(x = Date, y = price, color = company)) +
   
   geom_line()
 ```
+
+![](Stocks_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
 
 Problem 2.2 - Visualizing Stock Dynamics
 1 point possible (graded)
@@ -141,16 +284,23 @@ As an alternative choice to changing the colors, you could instead change the li
 Using this plot, answer the following questions.
 
 In March of 2000, the technology bubble burst, and a stock market crash occurred. According to this plot, which company's stock dropped more?
-```{r}
+
+```r
 ggplot(filter(df.all.gathered, (df.all.gathered$Date>as.Date('1999-01-01')&
 df.all.gathered$Date<as.Date('2001-01-01'))), aes(x = Date, y = price, color = company)) + geom_line()+ geom_vline(xintercept = as.numeric(ymd(20000301)),linetype="dotted")
 ```
 
-```{r}
+![](Stocks_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+
+
+```r
 plot(dfos$Coca$Date,dfos$Coca$StockPrice,type='l',col='red')
 lines(dfos$Procter$Date,dfos$Procter$StockPrice,type='l',col='blue')
 ```
-```{r}
+
+![](Stocks_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+```r
 # compute the max price between 1995 and 2005 :
 max <- df.all.gathered %>% filter(Date>as.Date('1995-01-01') & Date<as.Date('2005-01-01'))%>% slice(which.max(price))
 max<-max$price
@@ -159,11 +309,10 @@ ggplot(filter(df.all.gathered, (df.all.gathered$Date>as.Date('1995-01-01')&
 df.all.gathered$Date<as.Date('2005-01-01'))), aes(x = Date, y = price, color = company)) + geom_line()+ geom_hline(yintercept=max,linetype='dotted')
 ```
 
+![](Stocks_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
  Problem 3.2 - Visualizing Stock Dynamics 1995-2005
 1 point possible (graded)
 Which stock reaches the highest value in the time period 1995-2005?
-```{r}
 
-
-```
 
