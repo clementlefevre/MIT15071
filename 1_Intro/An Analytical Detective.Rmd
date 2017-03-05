@@ -1,9 +1,9 @@
 ---
 title: "Assignment 1 _An Analytical Detective"
-# output: 
-#   html_:
-#     keep_md: true
-output: html_notebook
+output:
+  html_:
+    keep_md: true
+#output: html_notebook
 ---
 
 
