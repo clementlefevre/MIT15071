@@ -8,20 +8,31 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 ```{r}
 require(dplyr)
+require(plyr)
 require(tidyr)
 require(ggplot2)
+require(lubridate)
 
-df <- data.frame(date=c("31/08/2011", "31/07/2011", "30/06/2011"),                     values=c(0.8378,0.8457,0.8147))
-#no Date format ->OK
-
-dateConvert<-as.Date(df$date,'%d/%m/%Y')
-
-df<-mutate(df,dateC=dateConvert)
-#with Date format -> NOK
-
-df
 
 ```
+**Problem 1.1 - Summary Statistics**
+1 point possible (graded)
+Before working with these data sets, we need to convert the dates into a format that R can understand. Take a look at the structure of one of the datasets using the str function. Right now, the date variable is stored as a factor. We can convert this to a "Date" object in R by using the following five commands (one for each data set):
+
+IBM$Date = as.Date(IBM$Date, "%m/%d/%y")
+
+GE$Date = as.Date(GE$Date, "%m/%d/%y")
+
+CocaCola$Date = as.Date(CocaCola$Date, "%m/%d/%y")
+
+ProcterGamble$Date = as.Date(ProcterGamble$Date, "%m/%d/%y")
+
+Boeing$Date = as.Date(Boeing$Date, "%m/%d/%y")
+
+The first argument to the as.Date function is the variable we want to convert, and the second argument is the format of the Date variable. We can just overwrite the original Date variable values with the output of this function. Now, answer the following questions using the str and summary functions.
+
+Our five datasets all have the same number of observations. How many observations are there in each data set?
+
 
 ```{r}
 
@@ -35,17 +46,122 @@ dfos <- list(Boeing=df_Boeing,Coca=df_Coca,Procter = df_Procter,GE = df_GE,IBM =
 
 for (namo in names(dfos)){
   dfos[[namo]]<- tbl_df(dfos[[namo]])
-  
-  DateConvert <-as.Date(strptime(dfos[[namo]]$Date,"%d/%m/%y"))
-  dfos[[namo]]$Date = as.Date(strptime(dfos[[namo]]$Date,"%d/%m/%y"))
-  print(head(dfos[[namo]]))
+  dfos[[namo]]$Date = as.Date(strptime(dfos[[namo]]$Date,"%m/%d/%y"))
+  print(dim(dfos[[namo]]))
 }
 
 ```
 
+**Problem 1.2 - Summary Statistics**
+1 point possible (graded)
+What is the earliest year in our datasets?
+
+```{r}
+min(dfos$Boeing$Date)
+```
+
+Problem 1.3 - Summary Statistics
+1 point possible (graded)
+What is the latest year in our datasets?
+
+```{r}
+max(dfos$Boeing$Date)
+```
+
+Problem 1.4 - Summary Statistics
+1 point possible (graded)
+What is the mean stock price of IBM over this time period?
+```{r}
+mean(dfos$Boeing$StockPrice)
+```
+roblem 1.5 - Summary Statistics
+1 point possible (graded)
+What is the minimum stock price of General Electric (GE) over this time period?
+
+```{r}
+min(dfos$GE$StockPrice)
+```
+
+Problem 1.6 - Summary Statistics
+1 point possible (graded)
+What is the maximum stock price of Coca-Cola over this time period?
+```{r}
+max(dfos$Coca$StockPrice)
+```
+Problem 1.7 - Summary Statistics
+1 point possible (graded)
+What is the median stock price of Boeing over this time period?
+```{r}
+median(dfos$Boeing$StockPrice)
+```
+Problem 1.8 - Summary Statistics
+1 point possible (graded)
+What is the standard deviation of the stock price of Procter & Gamble over this time period?
+```{r}
+sd(dfos$Boeing$StockPrice)
+```
+Problem 2.1 - Visualizing Stock Dynamics
+2 points possible (graded)
+Let's plot the stock prices to see if we can visualize trends in stock prices during this time period. Using the plot function, plot the Date on the x-axis and the StockPrice on the y-axis, for Coca-Cola.
+
+This plots our observations as points, but we would really like to see a line instead, since this is a continuous time period. To do this, add the argument type="l" to your plot command, and re-generate the plot (the character is quotes is the letter l, for line). You should now see a line plot of the Coca-Cola stock price.
+
+Around what year did Coca-Cola has its highest stock price in this time period?
+```{r}
+mergerFun <- function(x, y){
+ 
+  df <- inner_join(x, y, by= "Date")
+    return(df)
+}
+df.all<-Reduce(mergerFun,dfos)
+colnames(df.all)<- c('Date',names(dfos))
+head(df.all)
+
+```
+```{r}
+df.all.gathered <- gather(df.all,company,price, -Date)
+
+ggplot(df.all.gathered, aes(x = Date, y = price, color = company)) +
+  
+  geom_line()
+```
+
+Problem 2.2 - Visualizing Stock Dynamics
+1 point possible (graded)
+Now, let's add the line for Procter & Gamble too. You can add a line to a plot in R by using the lines function instead of the plot function. Keeping the plot for Coca-Cola open, type in your R console:
+
+lines(ProcterGamble$Date, ProcterGamble$StockPrice)
+
+Unfortunately, it's hard to tell which line is which. Let's fix this by giving each line a color. First, re-run the plot command for Coca-Cola, but add the argument col="red". You should see the plot for Coca-Cola show up again, but this time in red. Now, let's add the Procter & Gamble line (using the lines function like we did before), adding the argument col="blue". You should now see in your plot the Coca-Cola stock price in red, and the Procter & Gamble stock price in blue.
+
+As an alternative choice to changing the colors, you could instead change the line type of the Procter & Gamble line by adding the argument lty=2. This will make the Procter & Gamble line dashed.
+
+Using this plot, answer the following questions.
+
+In March of 2000, the technology bubble burst, and a stock market crash occurred. According to this plot, which company's stock dropped more?
+```{r}
+ggplot(filter(df.all.gathered, (df.all.gathered$Date>as.Date('1999-01-01')&
+df.all.gathered$Date<as.Date('2001-01-01'))), aes(x = Date, y = price, color = company)) + geom_line()+ geom_vline(xintercept = as.numeric(ymd(20000301)),linetype="dotted")
+```
+
+```{r}
+plot(dfos$Coca$Date,dfos$Coca$StockPrice,type='l',col='red')
+lines(dfos$Procter$Date,dfos$Procter$StockPrice,type='l',col='blue')
+```
+```{r}
+# compute the max price between 1995 and 2005 :
+max <- df.all.gathered %>% filter(Date>as.Date('1995-01-01') & Date<as.Date('2005-01-01'))%>% slice(which.max(price))
+max<-max$price
+
+ggplot(filter(df.all.gathered, (df.all.gathered$Date>as.Date('1995-01-01')&
+df.all.gathered$Date<as.Date('2005-01-01'))), aes(x = Date, y = price, color = company)) + geom_line()+ geom_hline(yintercept=max,linetype='dotted')
+```
+
+ Problem 3.2 - Visualizing Stock Dynamics 1995-2005
+1 point possible (graded)
+Which stock reaches the highest value in the time period 1995-2005?
+```{r}
 
 
+```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
