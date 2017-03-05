@@ -82,6 +82,9 @@ median(DateYear)
 Problem 2.3 - Understanding Dates in R
 1 point possible (graded)
 Now, let's extract the month and the day of the week, and add these variables to our data frame mvt. We can do this with two simple functions. Type the following commands in R:
+```{r}
+df
+```
 
 mvt$Month = months(DateConvert)
 
@@ -95,10 +98,12 @@ Using the table command, answer the following questions.
 
 In which month did the fewest motor vehicle thefts occur?
 ```{r}
+
 df$Month = months(DateYear)
 df$Weekday = weekdays(DateYear)
 df$Date = DateYear
 sort(table(df$Month),decreasing = F)
+
 ```
 Problem 2.4 - Understanding Dates in R
 1 point possible (graded)
@@ -114,6 +119,7 @@ table1<-table(df$Month,df$Arrest)
 table1
 which.max(table1[,2])
 ```
+
 
 ```{r}
 df_p<-tbl_df(df)
