@@ -189,5 +189,61 @@ Problem 3.5 - Integrating Metropolitan Area Data
 2.0 points possible (graded)
 Remembering that CPS$Race == "Asian" returns a TRUE/FALSE vector of whether an interviewee is Asian, determine the number of metropolitan areas in the United States from which at least 20% of interviewees are Asian.
 ```{r}
-
+df_CPS_M %>% group_by(MetroArea) %>% summarise(asia_ratio=sum(Race=='Asian')/n()*100) %>% filter(asia_ratio>=20) 
 ```
+Problem 3.6 - Integrating Metropolitan Area Data
+1 point possible (graded)
+Normally, we would look at the sorted proportion of interviewees from each metropolitan area who have not received a high school diploma with the command:
+
+sort(tapply(CPS$Education == "No high school diploma", CPS$MetroArea, mean))
+
+However, none of the interviewees aged 14 and younger have an education value reported, so the mean value is reported as NA for each metropolitan area. To get mean (and related functions, like sum) to ignore missing values, you can pass the parameter na.rm=TRUE. Passing na.rm=TRUE to the tapply function, determine which metropolitan area has the smallest proportion of interviewees who have received no high school diploma.
+
+```{r}
+groupy_education <-df_CPS_M %>% group_by(MetroArea,Education) %>% summarise(counto = n())%>% spread(Education,counto) %>% replace(is.na(.),0) 
+colnames(groupy_education)
+groupy_education$Total <- rowSums(groupy_education[,-1])
+groupy_education <- mutate(groupy_education,ratio=`No high school diploma`/Total)
+select(groupy_education,ratio)
+```
+```{r}
+df_CPS_M %>% group_by(MetroArea) %>% summarise(ratio_trumpist=sum(Education=='No high school diploma',na.rm=TRUE)/n()*100) %>% arrange(desc(ratio_trumpist)) %>% tail(.,5)
+```
+
+Problem 4.1 - Integrating Country of Birth Data
+2 points possible (graded)
+Just as we did with the metropolitan area information, merge in the country of birth information from the CountryMap data frame, replacing the CPS data frame with the result. If you accidentally overwrite CPS with the wrong values, remember that you can restore it by re-loading the data frame from CPSData.csv and then merging in the metropolitan area information using the command provided in the previous subproblem.
+
+What is the name of the variable added to the CPS data frame by this merge operation?
+
+
+  unanswered  
+How many interviewees have a missing value for the new country of birth variable?
+
+```{r}
+df_CPS_MC<- left_join(df_CPS_M,df_Country,by=c('CountryOfBirthCode'='Code'))
+setdiff(colnames(df_CPS_MC),colnames(df_CPS_M))
+sum(is.na(df_CPS_MC$Country))
+```
+Problem 4.2 - Integrating Country of Birth Data
+2.0 points possible (graded)
+Among all interviewees born outside of North America, which country was the most common place of birth?
+```{r}
+groupy_country <-df_CPS_MC %>% filter(!grepl('United States|Canada|Mexico',Country))%>% group_by(Country) %>% summarise(total= n()) %>% arrange(desc(total)) 
+groupy_country
+```
+Problem 4.3 - Integrating Country of Birth Data
+2.0 points possible (graded)
+What proportion of the interviewees from the "New York-Northern New Jersey-Long Island, NY-NJ-PA" metropolitan area have a country of birth that is not the United States? For this computation, don't include people from this metropolitan area who have a missing country of birth.
+
+```{r}
+df_CPS_MC %>% filter(MetroArea=='New York-Northern New Jersey-Long Island, NY-NJ-PA')%>% filter(!is.na(Country)) %>% summarise(sum(Country!='United States')/n()*100)
+```
+
+Problem 4.4 - Integrating Country of Birth Data
+3 points possible (graded)
+Which metropolitan area has the largest number (note -- not proportion) of interviewees with a country of birth in India? Hint -- remember to include na.rm=TRUE if you are using tapply() to answer this question.
+```{r}
+df_CPS_MC %>%filter(Country=='India') %>% group_by(MetroArea) %>% summarise(total=n()) %>% na.omit() %>% arrange(desc(total))
+```
+
