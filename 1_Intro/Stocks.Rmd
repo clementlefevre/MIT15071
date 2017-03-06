@@ -10,7 +10,6 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 ```{r}
 require(dplyr)
-require(plyr)
 require(tidyr)
 require(ggplot2)
 require(lubridate)
@@ -173,27 +172,21 @@ as the second argument of the tapply function.
 For IBM, compare the monthly averages to the overall average stock price. In which months has IBM historically had a higher stock price (on average)? Select all that apply.
 
 
-```{r}
-df_IBM_monthly <- dfos$IBM %>% group_by(Date) %>% summarise(mean(StockPrice))
-df_IBM_monthly
-colnames(df_IBM_monthly)<-c('1','2')
-df_IBM_monthly$name<- month.abb[df_IBM_monthly$month]
 
-df_IBM_monthly
-```
+
 
 ```{r}
-ggplot(df_IBM_monthly,aes(x=month,y=price,group=1))+ geom_line()+ scale_x_continuous(breaks=1:12,labels=df_IBM_monthly$name)
+df_group_month <- df.all.gathered %>% group_by(month_number = month(Date),company) %>% summarise(mean_price = mean(price))
 
-```
-```{r}
-df_group_month <- df.all.gathered %>% group_by(month(Date),company) %>% summarise(mean(price))
-colnames(df_group_month)<-c('month','company','price')
+df_group_month_IBM  <-filter(df_group_month,company=='IBM')
+
+df_group_month_no_IBM<-filter(df_group_month,company!='IBM')
 
 
-df_group_month
+ggplot(df_group_month_IBM,aes(x=month_number,y=mean_price,group=company,colour=company))+ geom_line()+
+scale_x_continuous(breaks=1:12,labels=month.abb[c(1:12)]) + ggtitle("mean stock price for IBM per month")
 
-ggplot(df_group_month,aes(x=month,y=price,group=company,colour=company))+ geom_line()+
-scale_x_continuous(breaks=1:12,labels=month.abb[c(1:12)])
+ggplot(df_group_month_no_IBM,aes(x=month_number,y=mean_price,group=company,colour=company))+ geom_line()+
+scale_x_continuous(breaks=1:12,labels=month.abb[c(1:12)])+ ggtitle("mean stock price per month")
 ```
 
