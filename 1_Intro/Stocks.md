@@ -30,40 +30,6 @@ require(dplyr)
 ```
 
 ```r
-require(plyr)
-```
-
-```
-## Loading required package: plyr
-```
-
-```
-## -------------------------------------------------------------------------
-```
-
-```
-## You have loaded plyr after dplyr - this is likely to cause problems.
-## If you need functions from both plyr and dplyr, please load plyr first, then dplyr:
-## library(plyr); library(dplyr)
-```
-
-```
-## -------------------------------------------------------------------------
-```
-
-```
-## 
-## Attaching package: 'plyr'
-```
-
-```
-## The following objects are masked from 'package:dplyr':
-## 
-##     arrange, count, desc, failwith, id, mutate, rename, summarise,
-##     summarize
-```
-
-```r
 require(tidyr)
 ```
 
@@ -90,12 +56,6 @@ require(lubridate)
 ```
 ## 
 ## Attaching package: 'lubridate'
-```
-
-```
-## The following object is masked from 'package:plyr':
-## 
-##     here
 ```
 
 ```
@@ -327,4 +287,27 @@ For IBM, compare the monthly averages to the overall average stock price. In whi
 
 
 
+
+
+
+```r
+df_group_month <- df.all.gathered %>% group_by(month_number = month(Date),company) %>% summarise(mean_price = mean(price))
+
+df_group_month_IBM  <-filter(df_group_month,company=='IBM')
+
+df_group_month_no_IBM<-filter(df_group_month,company!='IBM')
+
+
+ggplot(df_group_month_IBM,aes(x=month_number,y=mean_price,group=company,colour=company))+ geom_line()+
+scale_x_continuous(breaks=1:12,labels=month.abb[c(1:12)]) + ggtitle("mean stock price for IBM per month")
+```
+
+![](Stocks_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
+```r
+ggplot(df_group_month_no_IBM,aes(x=month_number,y=mean_price,group=company,colour=company))+ geom_line()+
+scale_x_continuous(breaks=1:12,labels=month.abb[c(1:12)])+ ggtitle("mean stock price per month")
+```
+
+![](Stocks_files/figure-html/unnamed-chunk-15-2.png)<!-- -->
 
