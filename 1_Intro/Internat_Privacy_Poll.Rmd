@@ -1,0 +1,63 @@
+---
+title: "Internet Privacy Poll"
+output:
+  html_document:
+    keep_md: true
+---
+
+Problem 1.1 - Loading and Summarizing the Dataset
+0 points possible (ungraded)
+Using read.csv(), load the dataset from AnonymityPoll.csv into a data frame called poll and summarize it with the summary() and str() functions.
+
+How many people participated in the poll?
+
+```{r}
+df<- read.csv('AnonymityPoll.csv')
+str(df)
+```
+
+Problem 1.2 - Loading and Summarizing the Dataset
+0 points possible (ungraded)
+Let's look at the breakdown of the number of people with smartphones using the table() and summary() commands on the Smartphone variable. (HINT: These three numbers should sum to 1002.)
+
+How many interviewees responded that they use a smartphone?
+
+
+  unanswered  
+How many interviewees responded that they don't use a smartphone?
+
+
+  unanswered  
+How many interviewees did not respond to the question, resulting in a missing value, or NA, in the summary() output?
+
+```{r}
+print (df %>% filter(Smartphone==1) %>% summarise(n()))
+print(df %>% filter(Smartphone==0) %>% summarise(n()))
+print(df %>% filter(is.na(Smartphone)) %>% summarise(n()))
+```
+
+Problem 1.3 - Loading and Summarizing the Dataset
+0 points possible (ungraded)
+By using the table() function on two variables, we can tell how they are related. To use the table() function on two variables, just put the two variable names inside the parentheses, separated by a comma (don't forget to add poll$ before each variable name). In the output, the possible values of the first variable will be listed in the left, and the possible values of the second variable will be listed on the top. Each entry of the table counts the number of observations in the data set that have the value of the first value in that row, and the value of the second variable in that column. For example, suppose we want to create a table of the variables "Sex" and "Region". We would type
+
+table(poll$Sex, poll$Region)
+
+in our R Console, and we would get as output
+
+Midwest Northeast South West
+
+Female 123 90 176 116
+
+Male 116 76 183 122
+
+This table tells us that we have 123 people in our dataset who are female and from the Midwest, 116 people in our dataset who are male and from the Midwest, 90 people in our dataset who are female and from the Northeast, etc.
+
+You might find it helpful to use the table() function to answer the following questions:
+
+Which of the following are states in the Midwest census region? (Select all that apply.)
+
+
+```{r}
+df %>%
+```
+
