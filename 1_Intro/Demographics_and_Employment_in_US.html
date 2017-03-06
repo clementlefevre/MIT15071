@@ -397,6 +397,27 @@ groupy_country</code></pre>
 ## 10 Dominican Republic   330
 ## # ... with 132 more rows</code></pre>
 <p>Problem 4.3 - Integrating Country of Birth Data 2.0 points possible (graded) What proportion of the interviewees from the “New York-Northern New Jersey-Long Island, NY-NJ-PA” metropolitan area have a country of birth that is not the United States? For this computation, don’t include people from this metropolitan area who have a missing country of birth.</p>
+<pre class="r"><code>df_CPS_MC %&gt;% filter(MetroArea=='New York-Northern New Jersey-Long Island, NY-NJ-PA')%&gt;% filter(!is.na(Country)) %&gt;% summarise(sum(Country!='United States')/n()*100)</code></pre>
+<pre><code>## # A tibble: 1 × 1
+##   `sum(Country != &quot;United States&quot;)/n() *...`
+##                                        &lt;dbl&gt;
+## 1                                   30.86603</code></pre>
+<p>Problem 4.4 - Integrating Country of Birth Data 3 points possible (graded) Which metropolitan area has the largest number (note – not proportion) of interviewees with a country of birth in India? Hint – remember to include na.rm=TRUE if you are using tapply() to answer this question.</p>
+<pre class="r"><code>df_CPS_MC %&gt;%filter(Country=='India') %&gt;% group_by(MetroArea) %&gt;% summarise(total=n()) %&gt;% na.omit() %&gt;% arrange(desc(total))</code></pre>
+<pre><code>## # A tibble: 83 × 2
+##                                             MetroArea total
+##                                                &lt;fctr&gt; &lt;int&gt;
+## 1  New York-Northern New Jersey-Long Island, NY-NJ-PA    96
+## 2        Washington-Arlington-Alexandria, DC-VA-MD-WV    50
+## 3            Philadelphia-Camden-Wilmington, PA-NJ-DE    32
+## 4                 Chicago-Naperville-Joliet, IN-IN-WI    31
+## 5                          Detroit-Warren-Livonia, MI    30
+## 6                  Atlanta-Sandy Springs-Marietta, GA    27
+## 7                   San Francisco-Oakland-Fremont, CA    27
+## 8            Hartford-West Hartford-East Hartford, CT    26
+## 9              Minneapolis-St Paul-Bloomington, MN-WI    23
+## 10               Los Angeles-Long Beach-Santa Ana, CA    19
+## # ... with 73 more rows</code></pre>
 
 
 

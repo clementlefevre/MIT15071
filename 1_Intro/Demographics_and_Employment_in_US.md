@@ -544,4 +544,39 @@ Problem 4.3 - Integrating Country of Birth Data
 What proportion of the interviewees from the "New York-Northern New Jersey-Long Island, NY-NJ-PA" metropolitan area have a country of birth that is not the United States? For this computation, don't include people from this metropolitan area who have a missing country of birth.
 
 
+```r
+df_CPS_MC %>% filter(MetroArea=='New York-Northern New Jersey-Long Island, NY-NJ-PA')%>% filter(!is.na(Country)) %>% summarise(sum(Country!='United States')/n()*100)
+```
+
+```
+## # A tibble: 1 × 1
+##   `sum(Country != "United States")/n() *...`
+##                                        <dbl>
+## 1                                   30.86603
+```
+
+Problem 4.4 - Integrating Country of Birth Data
+3 points possible (graded)
+Which metropolitan area has the largest number (note -- not proportion) of interviewees with a country of birth in India? Hint -- remember to include na.rm=TRUE if you are using tapply() to answer this question.
+
+```r
+df_CPS_MC %>%filter(Country=='India') %>% group_by(MetroArea) %>% summarise(total=n()) %>% na.omit() %>% arrange(desc(total))
+```
+
+```
+## # A tibble: 83 × 2
+##                                             MetroArea total
+##                                                <fctr> <int>
+## 1  New York-Northern New Jersey-Long Island, NY-NJ-PA    96
+## 2        Washington-Arlington-Alexandria, DC-VA-MD-WV    50
+## 3            Philadelphia-Camden-Wilmington, PA-NJ-DE    32
+## 4                 Chicago-Naperville-Joliet, IN-IN-WI    31
+## 5                          Detroit-Warren-Livonia, MI    30
+## 6                  Atlanta-Sandy Springs-Marietta, GA    27
+## 7                   San Francisco-Oakland-Fremont, CA    27
+## 8            Hartford-West Hartford-East Hartford, CT    26
+## 9              Minneapolis-St Paul-Bloomington, MN-WI    23
+## 10               Los Angeles-Long Beach-Santa Ana, CA    19
+## # ... with 73 more rows
+```
 
