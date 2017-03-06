@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Stock Dynamics"
 output:
   html_document:
     keep_md: true
