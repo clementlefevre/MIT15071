@@ -31,14 +31,46 @@ df_test <- df %>% filter(Year>2006)
 ggcorr(df_train)
 model1<-lm(Temp~. -Year-Month,df_train)
 summary(model1)
+corriaquino<-data.frame(cor(df_train))
+corriaquino <-tibble::rownames_to_column(data.frame(corriaquino),'indexo')
+corriaquino  %>% dplyr::select(indexo,CFC.11) %>% filter(CFC.11>0.7)
+
 ```
+Problem 3 - Simplifying the Model
+2.0 points possible (graded)
+Given that the correlations are so high, let us focus on the N2O variable and build a model with only MEI, TSI, Aerosols and N2O as independent variables. Remember to use the training set to build the model.
 
-Problem 1.2 - Creating Our First Model
-1 point possible (graded)
-Which variables are significant in the model? We will consider a variable signficant only if the p-value is below 0.05. (Select all that apply.)
+Enter the coefficient of N2O in this reduced model:
 
+
+  unanswered  
+(How does this compare to the coefficient in the previous model with all of the variables?)
+
+Enter the model R2:
 
 ```{r}
+model2<- lm(Temp~ MEI+TSI+Aerosols+N2O,df_train)
+summary(model2)
 
 ```
 
+```{r}
+model1_stepped<-step(model1)
+summary(model1_stepped)
+```
+Problem 5 - Testing on Unseen Data
+2.0 points possible (graded)
+We have developed an understanding of how well we can fit a linear regression to the training data, but does the model quality hold when applied to unseen data?
+
+Using the model produced from the step function, calculate temperature predictions for the testing data set, using the predict function.
+
+Enter the testing set R2:
+```{r}
+prediction <-predict(model1_stepped,df_test)
+
+SSE<- sum((prediction-df_test$Temp)^2)
+SST<-sum((df_test$Temp-mean(df_train$Temp))^2)
+1-SSE/SST
+
+```
+### Take good note that the r2 = rho (Pearson correlation) is not valid for multiple regression!!!
