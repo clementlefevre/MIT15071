@@ -156,6 +156,7 @@ In general, does it look like crime increases or decreases from 2009 - 2011?
 Increases
 Decreases
 ```{r}
+head(df)
 p<-ggplot(df, aes(x=Date,fill=Arrest)) + geom_histogram(binwidth=50) 
 p+geom_vline(xintercept = c(as.numeric(ymd(20080101)),
                             as.numeric(ymd(20090101))),linetype="dotted")
