@@ -1,0 +1,44 @@
+---
+title: "Climate Change"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+```
+Problem 1.1 - Creating Our First Model
+2.0 points possible (graded)
+We are interested in how changes in these variables affect future temperatures, as well as how well these variables explain temperature changes so far. To do this, first read the dataset climate_change.csv into R.
+
+Then, split the data into a training set, consisting of all the observations up to and including 2006, and a testing set consisting of the remaining years (hint: use subset). A training set refers to the data that will be used to build the model (this is the data we give to the lm() function), and a testing set refers to the data we will use to test our predictive ability.
+
+Next, build a linear regression model to predict the dependent variable Temp, using MEI, CO2, CH4, N2O, CFC.11, CFC.12, TSI, and Aerosols as independent variables (Year and Month should NOT be used in the model). Use the training set to build the model.
+
+Enter the model R2 (the "Multiple R-squared" value):
+```{r}
+
+df<- read.csv('climate_change.csv')
+
+df_train <- df %>% filter(Year<=2006)
+df_test <- df %>% filter(Year>2006)
+
+ggcorr(df_train)
+model1<-lm(Temp~. -Year-Month,df_train)
+summary(model1)
+```
+
+Problem 1.2 - Creating Our First Model
+1 point possible (graded)
+Which variables are significant in the model? We will consider a variable signficant only if the p-value is below 0.05. (Select all that apply.)
+
+
+```{r}
+
+```
+
