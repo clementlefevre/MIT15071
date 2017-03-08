@@ -1,0 +1,173 @@
+---
+title: "Korrektur - KundenNr : 962D547282 - Arbeitsbescheinigung"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+library(zoo)
+```
+
+Problem 1.1 - Understanding the Data
+6 points possible (graded)
+We would like to estimate influenza-like illness (ILI) activity using Google web search logs. Fortunately, one can easily access this data online:
+
+ILI Data - The CDC publishes on its website the official regional and state-level percentage of patient visits to healthcare providers for ILI purposes on a weekly basis.
+
+Google Search Queries - Google Trends allows public retrieval of weekly counts for every query searched by users around the world. For each location, the counts are normalized by dividing the count for each query in a particular week by the total number of online search queries submitted in that location during the week. Then, the values are adjusted to be between 0 and 1.
+
+The csv file FluTrain.csv aggregates this data from January 1, 2004 until December 31, 2011 as follows:
+
+"Week" - The range of dates represented by this observation, in year/month/day format.
+
+"ILI" - This column lists the percentage of ILI-related physician visits for the corresponding week.
+
+"Queries" - This column lists the fraction of queries that are ILI-related for the corresponding week, adjusted to be between 0 and 1 (higher values correspond to more ILI-related search queries).
+
+Before applying analytics tools on the training set, we first need to understand the data at hand. Load "FluTrain.csv" into a data frame called FluTrain. Looking at the time period 2004-2011, which week corresponds to the highest percentage of ILI-related physician visits? Select the day of the month corresponding to the start of this week.
+```{r}
+df_train<-read.csv('FluTrain.csv')
+df_test<-read.csv(('FluTest.csv'))
+
+refactor_df <- function(df){
+  df<-separate(df,Week,c('w1','w2'), sep = ' - ')
+  df[c('w1','w2')]<- lapply(df[c('w1','w2')], function(x) as.Date(x))
+    return (df)
+}
+df_train <- refactor_df(df_train)
+df_test <- refactor_df(df_test)
+
+str(df_train)
+str(df_test)
+```
+```{r}
+df_train_gathered<- gather(df_train,source,request,-c(w1,w2))
+df_train_gathered$variable <- as.factor(df_train_gathered$source)
+summary(df_train_gathered)
+```
+
+```{r}
+ggplot(df_train_gathered,aes(x=w1,y=request,colour=variable)) + geom_line()
+```
+
+```{r}
+df_train[which.max(df_train$Queries),]
+df_train[which.max(df_train$ILI),]
+```
+Problem 1.2 - Understanding the Data
+1 point possible (graded)
+Let us now understand the data at an aggregate level. Plot the histogram of the dependent variable, ILI. What best describes the distribution of values of ILI?
+```{r}
+ggplot(df_train_gathered, aes(x=request,fill=variable)) + geom_histogram(binwidth=.1)
+
+```
+Problem 1.3 - Understanding the Data
+1 point possible (graded)
+When handling a skewed dependent variable, it is often useful to predict the logarithm of the dependent variable instead of the dependent variable itself -- this prevents the small number of unusually large or small observations from having an undue influence on the sum of squared errors of predictive models. In this problem, we will predict the natural log of the ILI variable, which can be computed in R using the log() function.
+
+Plot the natural logarithm of ILI versus Queries. What does the plot suggest?.
+```{r}
+ggplot(df_train,aes(x=Queries,y=log(ILI))) + geom_jitter(width = 0.1, height = 0.1,alpha=0.6,color='blue')
+```
+Problem 2.2 - Linear Regression Model
+2.0 points possible (graded)
+Let's call the regression model from the previous problem (Problem 2.1) FluTrend1 and run it in R. Hint: to take the logarithm of a variable Var in a regression equation, you simply use log(Var) when specifying the formula to the lm() function.
+
+What is the training set R-squared value for FluTrend1 model (the "Multiple R-squared")?
+```{r}
+FluTrend1 <- lm(log(ILI)~Queries,data=df_train)
+summary(FluTrend1)
+```
+Problem 3.1 - Performance on the Test Set
+1 point possible (graded)
+The csv file FluTest.csv provides the 2012 weekly data of the ILI-related search queries and the observed weekly percentage of ILI-related physician visits. Load this data into a data frame called FluTest.
+
+Normally, we would obtain test-set predictions from the model FluTrend1 using the code
+
+PredTest1 = predict(FluTrend1, newdata=FluTest)
+
+However, the dependent variable in our model is log(ILI), so PredTest1 would contain predictions of the log(ILI) value. We are instead interested in obtaining predictions of the ILI value. We can convert from predictions of log(ILI) to predictions of ILI via exponentiation, or the exp() function. The new code, which predicts the ILI value, is
+
+PredTest1 = exp(predict(FluTrend1, newdata=FluTest))
+
+What is our estimate for the percentage of ILI-related physician visits for the week of March 11, 2012? (HINT: You can either just output FluTest$Week to find which element corresponds to March 11, 2012, or you can use the "which" function in R. To learn more about the which function, type ?which in your R console.)
+```{r}
+df_test$prediction <- exp(predict(FluTrend1,newdata=df_test))
+date1<-as.Date('2012-03-11')
+date1_row <-df_test[which(df_test$w1==date1),]
+date1_row$prediction
+
+(date1_row$prediction-date1_row$ILI)/date1_row$ILI
+```
+Problem 3.3 - Performance on the Test Set
+1 point possible (graded)
+What is the Root Mean Square Error (RMSE) between our estimates and the actual observations for the percentage of ILI-related physician visits, on the test set?
+```{r}
+SSE <- df_test %>% summarise(sqrt(sum((prediction-ILI)^2)/nrow(df_test)))
+SSE
+```
+Problem 4.1 - Training a Time Series Model
+1 point possible (graded)
+The observations in this dataset are consecutive weekly measurements of the dependent and independent variables. This sort of dataset is called a "time series." Often, statistical models can be improved by predicting the current value of the dependent variable using the value of the dependent variable from earlier weeks. In our models, this means we will predict the ILI variable in the current week using values of the ILI variable from previous weeks.
+
+First, we need to decide the amount of time to lag the observations. Because the ILI variable is reported with a 1- or 2-week lag, a decision maker cannot rely on the previous week's ILI value to predict the current week's value. Instead, the decision maker will only have data available from 2 or more weeks ago. We will build a variable called ILILag2 that contains the ILI value from 2 weeks before the current observation.
+
+To do so, we will use the "zoo" package, which provides a number of helpful methods for time series models. While many functions are built into R, you need to add new packages to use some functions. New packages can be installed and loaded easily in R, and we will do this many times in this class. Run the following two commands to install and load the zoo package. In the first command, you will be prompted to select a CRAN mirror to use for your download. Select a mirror near you geographically.
+
+install.packages("zoo")
+
+library(zoo)
+
+After installing and loading the zoo package, run the following commands to create the ILILag2 variable in the training set:
+
+ILILag2 = lag(zoo(FluTrain$ILI), -2, na.pad=TRUE)
+
+FluTrain$ILILag2 = coredata(ILILag2)
+
+In these commands, the value of -2 passed to lag means to return 2 observations before the current one; a positive value would have returned future observations. The parameter na.pad=TRUE means to add missing values for the first two weeks of our dataset, where we can't compute the data from 2 weeks earlier.
+
+How many values are missing in the new ILILag2 variable?
+```{r}
+df_train$ILILag2<- lag(df_train$ILI,2)
+df_test$ILILag2 <- lag(df_test$ILI,2)
+
+head(df_train)
+```
+Problem 4.2 - Training a Time Series Model
+1 point possible (graded)
+Use the plot() function to plot the log of ILILag2 against the log of ILI. Which best describes the relationship between these two variabl
+```{r}
+ggplot(df_train,aes(x=log(ILI),y=log(ILILag2))) + geom_point(color='blue',shape=21)
+```
+Problem 4.3 - Training a Time Series Model
+2 points possible (graded)
+Train a linear regression model on the FluTrain dataset to predict the log of the ILI variable using the Queries variable as well as the log of the ILILag2 variable. Call this model FluTrend2.
+
+Which coefficients are significant at the p=0.05 level in this regression model? (Select all that apply.)
+```{r}
+FlueTrend2<-lm(log(ILI)~ Queries +log(ILILag2),data = df_train)
+summary(FlueTrend2)
+```
+```{r}
+df_test$ILILag2[1]<-df_train$ILI[nrow(df_train)-1]
+df_test$ILILag2[2]<-df_train$ILI[nrow(df_train)]
+head(df_test)
+```
+Problem 5.4 - Evaluating the Time Series Model in the Test Set
+2.0 points possible (graded)
+Obtain test set predictions of the ILI variable from the FluTrend2 model, again remembering to call the exp() function on the result of the predict() function to obtain predictions for ILI instead of log(ILI).
+
+What is the test-set RMSE of the FluTrend2 model?
+```{r}
+prediction_test2<- exp(predict(FlueTrend2,newdata= df_test))
+str(prediction_test2)
+SSE<- sum((prediction_test2-df_test$ILI)^2)
+sqrt(SSE/nrow(df_test))
+```
