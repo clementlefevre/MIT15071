@@ -9,6 +9,45 @@ output:
 ```{r}
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(GGally)
+library(caret)
+library(ROCR)
+set.seed(88)
 ```
+
+```{r}
+df<-read.csv('quality.csv')
+index<-createDataPartition(df$PoorCare,p=0.75,list=FALSE )
+df_train<-df[index,]
+df_test<-df[-index,]
+
+
+```
+
+```{r}
+model1<-glm(PoorCare~ OfficeVisits+Narcotics,data=df_train,family = "binomial")
+summary(model1)
+```
+```{r}
+df_train$prediction1<-predict(model1,df_train,type = 'response')
+df_train$prediction_discrete <- (df_train$prediction1>0.5)*1
+df_train %>% group_by(PoorCare) %>% summarise(mean(prediction1))
+df_train %>% group_by(PoorCare) %>% summarise(n(),n()/nrow(.))
+head(df_train[,c('PoorCare','prediction1','prediction_discrete')],30)
+```
+```{r}
+# Prediction function
+ROCRpred = prediction(df_train$prediction1, df_train$PoorCare)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+
+
+```
+

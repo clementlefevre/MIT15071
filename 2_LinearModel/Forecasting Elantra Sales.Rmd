@@ -64,5 +64,8 @@ As we have seen before, changes in coefficient signs and signs that are counter 
 
 Which of the following variables is CPI_energy highly correlated with? Select all that apply. (Include only variables where the absolute value of the correlation exceeds 0.6. For the purpose of this question, treat Month as a numeric variable, not a factor variable.)
 ```{r}
-
+df_train$Month<-as.integer(df_train$Month)
+cor(df_train)
+ggcorr(df_train)
 ```
+
