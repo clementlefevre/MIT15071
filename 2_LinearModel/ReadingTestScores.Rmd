@@ -1,0 +1,132 @@
+---
+title: "Reading Test Scores"
+output:
+  html_document:
+    keep_md: true
+---
+
+Problem 1.1 - Dataset size
+1 point possible (graded)
+Load the training and testing sets using the read.csv() function, and save them as variables with the names pisaTrain and pisaTest.
+
+How many students are there in the training set?
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+```
+
+
+```{r}
+pisa_train<-read.csv('pisa2009train.csv')
+pisa_test <- read.csv('pisa2009test.csv')
+nrow(pisa_train)
+
+```
+
+Problem 1.2 - Summarizing the dataset
+2 points possible (graded)
+Using tapply() on pisaTrain, what is the average reading test score of males?
+
+
+  unanswered  
+Of females?
+
+```{r}
+pisa_train %>% group_by(male)%>%summarise(mean(readingScore))
+```
+
+Problem 1.3 - Locating missing values
+1 point possible (graded)
+Which variables are missing data in at least one observation in the training set? Select all that apply.
+```{r}
+pisa_train %>% summarise_each(funs(sum(is.na(.)))) %>% gather() %>% filter(value>0)
+```
+Problem 1.4 - Removing missing values
+2 points possible (graded)
+Linear regression discards observations with missing data, so we will remove all such observations from the training and testing sets. Later in the course, we will learn about imputation, which deals with missing data by filling in missing values with plausible information.
+
+Type the following commands into your R console to remove observations with any missing value from pisaTrain and pisaTest:
+
+pisaTrain = na.omit(pisaTrain)
+
+pisaTest = na.omit(pisaTest)
+
+How many observations are now in the training set?
+
+
+  unanswered  
+How many observations are now in the testing set?
+```{r}
+pisa_train<-na.omit(pisa_train)
+pisa_test<-na.omit(pisa_test)
+dim(pisa_train)
+dim(pisa_test)
+```
+Problem 2.1 - Factor variables
+2 points possible (graded)
+Factor variables are variables that take on a discrete set of values, like the "Region" variable in the WHO dataset from the second lecture of Unit 1. This is an unordered factor because there isn't any natural ordering between the levels. An ordered factor has a natural ordering between the levels (an example would be the classifications "large," "medium," and "small").
+
+Which of the following variables is an unordered factor with at least 3 levels? (Select all that apply.)
+
+
+```{r}
+str(pisa_train)
+```
+Problem 2.2 - Unordered factors in regression models
+1 point possible (graded)
+To include unordered factors in a linear regression model, we define one level as the "reference level" and add a binary variable for each of the remaining levels. In this way, a factor with n levels is replaced by n-1 binary variables. The reference level is typically selected to be the most frequently occurring level in the dataset.
+
+As an example, consider the unordered factor variable "color", with levels "red", "green", and "blue". If "green" were the reference level, then we would add binary variables "colorred" and "colorblue" to a linear regression problem. All red examples would have colorred=1 and colorblue=0. All blue examples would have colorred=0 and colorblue=1. All green examples would have colorred=0 and colorblue=0.
+
+Now, consider the variable "raceeth" in our problem, which has levels "American Indian/Alaska Native", "Asian", "Black", "Hispanic", "More than one race", "Native Hawaiian/Other Pacific Islander", and "White". Because it is the most common in our population, we will select White as the reference level.
+
+Which binary variables will be included in the regression model? (Select all that apply.)
+```{r}
+pisa_train$raceeth <- relevel(pisa_train$raceeth,"White")
+model1<-lm(readingScore~ .,pisa_train)
+summary(model1)
+```
+Problem 3.2 - Computing the root-mean squared error of the model
+1 point possible (graded)
+What is the training-set root-mean squared error (RMSE) of lmScore?
+```{r}
+summary(model1)$sigma
+prediction<-predict(model1,newdata = pisa_train)
+sqrt((sum((prediction-pisa_train$readingScore)^2))/nrow(pisa_train))
+```
+Consider two students A and B. They have all variable values the same, except that student A is in grade 11 and student B is in grade 9. What is the predicted reading score of student A minus the predicted reading score of student B?
+```{r}
+2*29.54
+```
+Problem 4.1 - Predicting on unseen data
+2.0 points possible (graded)
+Using the "predict" function and supplying the "newdata" argument, use the lmScore model to predict the reading scores of students in pisaTest. Call this vector of predictions "predTest". Do not change the variables in the model (for example, do not remove variables that we found were not significant in the previous part of this problem). Use the summary function to describe the test set predictions.
+
+What is the range between the maximum and minimum predicted reading score on the test set?
+```{r}
+prediction_test <- predict(model1,pisa_test)
+max(prediction_test)-min(prediction_test)
+```
+Problem 4.2 - Test set SSE and RMSE
+2 points possible (graded)
+What is the sum of squared errors (SSE) of lmScore on the testing set?
+
+
+  unanswered  
+What is the root-mean squared error (RMSE) of lmScore on the testing set?
+```{r}
+prediction_test <- predict(model1,newdata=pisa_test)
+SSE = sum((prediction_test-pisa_test$readingScore)^2)
+SST = sum((pisa_test$readingScore-mean(pisa_train$readingScore))^2)
+
+RMSE = sqrt(SSE/nrow(pisa_test))
+RMSE
+print(SSE)
+print(SST)
+1-SSE/SST
+
+
+```
