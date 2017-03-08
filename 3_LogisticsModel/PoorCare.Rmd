@@ -1,0 +1,14 @@
+---
+title: "PoorCare"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+```

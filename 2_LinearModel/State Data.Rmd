@@ -16,8 +16,89 @@ library(ggplot2)
 library(GGally)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+df<-read.csv('statedata.csv')
+str(df)
+```
+Problem 1.1 - Data Exploration
+0 points possible (ungraded)
+We begin by exploring the data. Plot all of the states' centers with latitude on the y axis (the "y" variable in our dataset) and longitude on the x axis (the "x" variable in our dataset). The shape of the plot should look like the outline of the United States! Note that Alaska and Hawaii have had their coordinates adjusted to appear just off of the west coast.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+In the R command you used to generate this plot, which variable name did you use as the first argument?
+```{r}
+ggplot(df,aes(x=x,y=y)) + geom_point()
+```
+Problem 1.2 - Data Exploration
+0 points possible (ungraded)
+Using the tapply command, determine which region of the US (West, North Central, South, or Northeast) has the highest average high school graduation rate of all the states in the region:
+```{r}
+df %>% group_by(state.region) %>% summarise(meano = mean(HS.Grad)) %>% filter(meano==max(meano))
+```
+Problem 1.3 - Data Exploration
+0 points possible (ungraded)
+Now, make a boxplot of the murder rate by region (for more information about creating boxplots in R, type ?boxplot in your console).
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Which region has the highest median murder rate?
+
+
+```{r}
+ggplot(df, aes(x=state.region, y=Murder, group=state.region,colour=state.region)) + geom_boxplot()
+```
+
+roblem 1.4 - Data Exploration
+0 points possible (ungraded)
+You should see that there is an outlier in the Northeast region of the boxplot you just generated. Which state does this correspond to? (Hint: There are many ways to find the answer to this question, but one way is to use the subset command to only look at the Northeast data.)
+
+
+```{r}
+df %>% filter(state.region=='Northeast') %>% filter(Murder==max(Murder)) %>% select(state.name)
+```
+
+Problem 2.1 - Predicting Life Expectancy - An Initial Model
+0 points possible (ungraded)
+We would like to build a model to predict life expectancy by state using the state statistics we have in our dataset.
+
+Build the model with all potential variables included (Population, Income, Illiteracy, Murder, HS.Grad, Frost, and Area). Note that you should use the variable "Area" in your model, NOT the variable "state.area".
+
+What is the coefficient for "Income" in your linear regression model?
+```{r}
+lm1<- lm(Life.Exp ~ Population+ Income+ Illiteracy+ Murder+ HS.Grad+ Frost+  Area,data=df)
+summary(lm1)
+```
+Problem 2.3 - Predicting Life Expectancy - An Initial Model
+0 points possible (ungraded)
+Now plot a graph of life expectancy vs. income using the command:
+
+plot(statedata$Income, statedata$Life.Exp)
+
+Visually observe the plot. What appears to be the relationship?
+```{r}
+ggplot(df,aes(Income,Life.Exp)) +geom_point(colour='blue') + geom_text(aes(label=state.name),hjust=1, vjust=1)
+```
+Problem 3.1 - Predicting Life Expectancy - Refining the Model and Analyzing Predictions
+0 points possible (ungraded)
+Recall that we discussed the principle of simplicity: that is, a model with fewer variables is preferable to a model with many unnnecessary variables. Experiment with removing independent variables from the original model. Remember to use the significance of the coefficients to decide which variables to remove (remove the one with the largest "p-value" first, or the one with the "t value" closest to zero), and to remove them one at a time (this is called "backwards variable selection"). This is important due to multicollinearity issues - removing one insignificant variable may make another previously insignificant variable become significant.
+
+You should be able to find a good model with only 4 independent variables, instead of the original 7. Which variables does this model contain?
+```{r}
+stepped_model1<-step(lm1)
+```
+```{r}
+summary(stepped_model1)
+```
+Problem 3.3 - Predicting Life Expectancy - Refining the Model and Analyzing Predictions
+0 points possible (ungraded)
+Using the simplified 4 variable model that we created, we'll now take a look at how our predictions compare to the actual values.
+
+Take a look at the vector of predictions by using the predict function (since we are just looking at predictions on the training set, you don't need to pass a "newdata" argument to the predict function).
+
+Which state do we predict to have the lowest life expectancy? (Hint: use the sort function)
+
+
+```{r}
+df$prediction<- predict(stepped_model1,newdata = df)
+df[which.min(df$prediction),]
+df[which.min(df$Life.Exp),]
+
+```
+

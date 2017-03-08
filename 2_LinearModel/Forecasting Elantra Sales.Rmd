@@ -1,0 +1,68 @@
+---
+title: "Forecasting Elantra Sales"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(GGally)
+```
+
+Problem 1 - Loading the Data
+0 points possible (ungraded)
+Load the data set. Split the data set into training and testing sets as follows: place all observations for 2012 and earlier in the training set, and all observations for 2013 and 2014 into the testing set.
+
+How many observations are in the training set?
+```{r}
+df<-read.csv('elantra.csv')
+df_train<- df %>% filter(Year<2013)
+df_test<- df %>% filter(Year>=2013)
+str(df_train)
+```
+Problem 2.1 - A Linear Regression Model
+0 points possible (ungraded)
+Build a linear regression model to predict monthly Elantra sales using Unemployment, CPI_all, CPI_energy and Queries as the independent variables. Use all of the training set data to do this.
+
+What is the model R-squared? Note: In this problem, we will always be asking for the "Multiple R-Squared" of the model.
+```{r}
+lm1<-lm(ElantraSales ~ Unemployment+ CPI_all+ CPI_energy + Queries ,data=df_train)
+summary(lm1)
+```
+Problem 3.1 - Modeling Seasonality
+0 points possible (ungraded)
+Our model R-Squared is relatively low, so we would now like to improve our model. In modeling demand and sales, it is often useful to model seasonality. Seasonality refers to the fact that demand is often cyclical/periodic in time. For example, in countries with different seasons, demand for warm outerwear (like jackets and coats) is higher in fall/autumn and winter (due to the colder weather) than in spring and summer. (In contrast, demand for swimsuits and sunscreen is higher in the summer than in the other seasons.) Another example is the "back to school" period in North America: demand for stationary (pencils, notebooks and so on) in late July and all of August is higher than the rest of the year due to the start of the school year in September.
+
+In our problem, since our data includes the month of the year in which the units were sold, it is feasible for us to incorporate monthly seasonality. From a modeling point of view, it may be reasonable that the month plays an effect in how many Elantra units are sold.
+
+To incorporate the seasonal effect due to the month, build a new linear regression model that predicts monthly Elantra sales using Month as well as Unemployment, CPI_all, CPI_energy and Queries. Do not modify the training and testing data frames before building the model.
+
+```{r}
+lm2<-lm(ElantraSales~ Month + Unemployment + CPI_all + CPI_energy  + Queries,data=df_train)
+summary(lm2)
+```
+Problem 4.1 - A New Model
+0 points possible (ungraded)
+Re-run the regression with the Month variable modeled as a factor variable. (Create a new variable that models the Month as a factor (using the as.factor function) instead of overwriting the current Month variable. We'll still use the numeric version of Month later in the problem.)
+
+What is the model R-Squared?
+```{r}
+df_train$Month<-as.factor(df_train$Month)
+lm2<-lm(ElantraSales~ Month + Unemployment + CPI_all + CPI_energy  + Queries,data=df_train)
+summary(lm2)
+
+```
+Problem 5.1 - Multicolinearity
+0 points possible (ungraded)
+Another peculiar observation about the regression is that the sign of the Queries variable has changed. In particular, when we naively modeled Month as a numeric variable, Queries had a positive coefficient. Now, Queries has a negative coefficient. Furthermore, CPI_energy has a positive coefficient -- as the overall price of energy increases, we expect Elantra sales to increase, which seems counter-intuitive (if the price of energy increases, we'd expect consumers to have less funds to purchase automobiles, leading to lower Elantra sales).
+
+As we have seen before, changes in coefficient signs and signs that are counter to our intuition may be due to a multicolinearity problem. To check, compute the correlations of the variables in the training set.
+
+Which of the following variables is CPI_energy highly correlated with? Select all that apply. (Include only variables where the absolute value of the correlation exceeds 0.6. For the purpose of this question, treat Month as a numeric variable, not a factor variable.)
+```{r}
+
+```
