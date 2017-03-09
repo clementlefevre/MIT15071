@@ -1,0 +1,87 @@
+---
+title: "US Elections"
+output:
+  html_document: default
+  html_notebook: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ggcorrplot)
+library(ROCR)
+
+```
+
+```{r}
+polling<-read.csv('PollingData.csv')
+str(polling)
+```
+```{r}
+library(mice)
+simple<-polling[c('Rasmussen','SurveyUSA','DiffCount','PropR')]
+set.seed(144)
+imputed<-mice::complete(mice(simple))
+polling$Rasmussen<-imputed$Rasmussen
+polling$SurveyUSA<-imputed$SurveyUSA
+
+head(polling)
+```
+```{r}
+str(polling)
+df_train<- polling %>% filter(Year<2012)
+df_test<- polling %>% filter(Year==2012)
+
+```
+
+Basic Baseline : always predict republican wins :
+```{r}
+table(df_train$Republican,rep(1,nrow(df_train)))
+
+```
+
+Better baseline : use the sign of Rasmussen poll:
+```{r}
+table(df_train$Republican,sign(df_train$Rasmussen))
+```
+Correlation Matrix
+```{r}
+filtered_train<-select(df_train,-one_of(c('Year','State')))
+corr <- round(cor(filtered_train), 1)
+
+# Plot
+ggcorrplot(corr, hc.order = TRUE, 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           method="circle", 
+           colors = c("tomato2", "white", "springgreen3"), 
+           title="Correlogram of Polls", 
+           ggtheme=theme_bw)
+```
+```{r}
+model1<-glm(Republican~PropR,data=df_train,family = binomial)
+summary(model1)
+predict1<-predict(model1,newdata=df_train,type = 'response')
+str(predict1)
+
+```
+```{r}
+# Prediction function
+ROCRpred = prediction(predict1, df_train$Republican)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+

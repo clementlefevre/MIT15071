@@ -1,0 +1,79 @@
+---
+title: "Logit"
+output:
+  html_document:
+    keep_md: true
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(caret)
+
+
+x<- seq(0,1,length.out = 100)
+df<-data.frame(x)
+ggplot(df,aes(x=x,y=log(x/(1-x))))+geom_line()
+```
+
+```{r}
+df<-read.csv('quality.csv')
+index<-createDataPartition(df$PoorCare,p=.75,list=FALSE)
+df_train<-df[index,]
+df_test<-df[-index,]
+
+```
+
+```{r}
+groupy <- df %>% group_by(Narcotics,PoorCare) %>%summarise(total=n())
+groupy <- groupy %>% spread(PoorCare,total,fill = 0) %>% setNames( c("narcotics", "good_care", "bad_care") )
+groupy<- groupy %>% mutate(bad_care_prob = bad_care /(bad_care+good_care))
+plot(groupy$bad_care_prob~groupy$narcotics)
+plot(log(groupy$bad_care_prob/(1-groupy$bad_care_prob)))
+
+```
+
+```{r}
+library(MASS)
+data("menarche")
+me<-menarche
+me$menarche<-me$Menarche
+me$no_mearche<-me$Total -me$Menarche
+me$proba_menarche<- me$menarche/me$Total
+plot(me$Age,log(me$proba_menarche/(1-me$proba_menarche)))
+
+
+```
+**Framingham Study**
+```{r}
+fram<-read.csv('framingham.csv')
+set.seed(1000)
+index<- createDataPartition(fram$TenYearCHD,p=0.65,list=FALSE)
+fram_train<-fram[index,]
+fram_test<-fram[-index,]
+
+```
+
+```{r}
+model1<-glm(TenYearCHD ~.,data=fram_train,family='binomial')
+summary(model1)
+prediction1<-predict(model1,newdata = fram_test,type = 'response')
+str(prediction1)
+table(fram_test$TenYearCHD,prediction1>0.5)
+```
+Compare with Baseline
+```{r}
+mean(fram_test$TenYearCHD)
+mean(prediction1,na.rm=TRUE)
+fram_test %>% summarise_each(funs(sum(is.na(.)))) %>% gather() %>% filter(value>0)
+```
+
+```{r}
+table(is.na(prediction1))
+```
+

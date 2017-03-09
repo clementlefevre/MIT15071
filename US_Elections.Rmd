@@ -1,0 +1,19 @@
+---
+title: "US Elections"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(caret)
+
+```
+
+```{r}
+polling<-read.csv('3_LogisticsModel/PollingData.csv')
+```
+
