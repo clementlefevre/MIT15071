@@ -48,8 +48,6 @@ library(gridExtra)
 library(grid)
 
 
-source('multiplot.r')
-
 df<-read.csv('co2_temp.csv')
 df$X<-NULL
 
