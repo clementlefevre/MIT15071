@@ -194,7 +194,7 @@ auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
 auc
 
 # Performance function
-ROCRperf = performance(ROCRpred, "tpr", "fpr")
+ROCRperf = performance(ROCRpred, "tnr", "fnr")
 
 
 # Add threshold labels 

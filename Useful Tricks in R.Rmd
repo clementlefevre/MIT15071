@@ -31,4 +31,7 @@ Convert the index into column (useful with correlation matrix e.g)
 ```{r}
 tibble::rownames_to_column(data.frame(df),'indexo')
 ```
-
+Get the number of NA per row :
+```{r}
+rowSums(is.na(df))
+```

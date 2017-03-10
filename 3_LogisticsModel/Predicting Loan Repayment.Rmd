@@ -1,0 +1,74 @@
+---
+title: "Predicting Loan repayment"
+output:
+  html_document:
+    keep_md: true
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(mice)
+df<- read.csv('loans.csv')
+
+summary(df)
+
+```
+Problem 1.1 - Preparing the Dataset
+1 point possible (graded)
+Load the dataset loans.csv into a data frame called loans, and explore it using the str() and summary() functions.
+
+What proportion of the loans in the dataset were not paid in full? Please input a number between 0 and 1.
+```{r}
+df %>% group_by(not.fully.paid) %>% summarise(total = n( )) %>% mutate(ratio= total*100/sum(total))
+```
+Problem 1.2 - Preparing the Dataset
+1 point possible (graded)
+Which of the following variables has at least one missing observation? Select all that apply.
+```{r}
+df%>% summarise_each(funs(sum(is.na(.)))) %>% gather() %>% filter(value>0)
+
+```
+Problem 1.3 - Preparing the Dataset
+1 point possible (graded)
+Which of the following is the best reason to fill in the missing values for these variables instead of removing observations with missing data? (Hint: you can use the subset() function to build a data frame with the observations missing at least one value. To test if a variable, for example pub.rec, is missing a value, use is.na(pub.rec).)
+```{r}
+not_fully_paid_ratio_only_no_NA <-df %>% na.omit() %>% summarise(mean(not.fully.paid))
+not_fully_paid_ratio_only_with_NA <- df %>% mutate(has_NA = rowSums(is.na(.))) %>% filter(has_NA>0) %>% summarise(mean(not.fully.paid))
+
+print(not_fully_paid_ratio_only_no_NA)
+print(not_fully_paid_ratio_only_with_NA)
+
+df %>% mutate(has_NA = rowSums(is.na(.))) %>% filter(has_NA>0) %>% nrow()
+```
+
+
+Problem 1.4 - Preparing the Dataset
+1 point possible (graded)
+For the rest of this problem, we'll be using a revised version of the dataset that has the missing values filled in with multiple imputation (which was discussed in the Recitation of this Unit). To ensure everybody has the same data frame going forward, you can either run the commands below in your R console (if you haven't already, run the command install.packages("mice") first), or you can download and load into R the dataset we created after running the imputation: loans_imputed.csv.
+
+IMPORTANT NOTE: On certain operating systems, the imputation results are not the same even if you set the random seed. If you decide to do the imputation yourself, please still read the provided imputed dataset (loans_imputed.csv) into R and compare your results, using the summary function. If the results are different, please make sure to use the data in loans_imputed.csv for the rest of the problem.
+```{r}
+df2<- complete(mice(select(df,-not.fully.paid)))
+summary(df2)
+df2$not.fully.paid<-df$not.fully.paid
+str(df2)
+```
+```{r}
+set.seed(144)
+library(caTools)
+
+split = sample.split(df2$not.fully.paid, SplitRatio = 0.7)
+
+df_train = subset(df, split == TRUE)
+
+df_test= subset(df, split == FALSE)
+```
+
+```{r}
+model1 <- glm(not.fully.paid~.,data=df_train,family = binomial)
+summary(model1)
+```
+
