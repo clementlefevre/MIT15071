@@ -25,8 +25,7 @@ df$X<-NULL
 
 ggplot(df,aes(y=Temperature,x=co2,color=Year))+geom_point()+scale_color_gradient(low="blue", high="red") +   ggtitle(expression(atop("EPA head Scott Pruitt denies that carbon dioxide causes global warming", atop(italic("Temperature vs CO2 concentration - 1975 to 2005"), ""))))+ xlab("CO2 molfrac (ppm) observed in Hawai") +
   
-  ylab(expression(atop("Temperature deviation from the average of 1951-1975", atop(italic("T(Celsius) for latitude between (0°-30°North)"), "")))) +     annotation_custom(grob = textGrob("Extra text.  Read all about it"))
- 
+  ylab(expression(atop("Temperature deviation from the average of 1951-1975", atop(italic("T(Celsius) for latitude between (0°-30°North)"), ""))))
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
