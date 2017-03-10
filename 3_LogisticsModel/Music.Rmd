@@ -1,0 +1,178 @@
+---
+title: "Popularity of Music Records"
+output:
+  html_document:
+    keep_md: true
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+df<- read.csv('songs.csv')
+
+table(df$year)
+
+```
+Problem 1.2 - Understanding the Data
+1 point possible (graded)
+How many songs does the dataset include for which the artist name is "Michael Jackson"?
+```{r}
+nrow(df[df$artistname== "Michael Jackson",])
+```
+Problem 1.3 - Understanding the Data
+1 point possible (graded)
+Which of these songs by Michael Jackson made it to the Top 10? Select all that apply.
+```{r}
+df %>% filter(artistname== "Michael Jackson" & Top10==1)
+``` 
+Problem 1.4 - Understanding the Data
+2 points possible (graded)
+The variable corresponding to the estimated time signature (timesignature) is discrete, meaning that it only takes integer values (0, 1, 2, 3, . . . ). What are the values of this variable that occur in our dataset? Select all that apply.
+```{r}
+  table(df$timesignature)
+```
+Problem 1.5 - Understanding the Data
+1 point possible (graded)
+Out of all of the songs in our dataset, the song with the highest tempo is one of the following songs. Which one is it?
+```{r}
+df[which.max(df$tempo),]
+```
+Problem 2.1 - Creating Our Prediction Model
+1 point possible (graded)
+We wish to predict whether or not a song will make it to the Top 10. To do this, first use the subset function to split the data into a training set "SongsTrain" consisting of all the observations up to and including 2009 song releases, and a testing set "SongsTest", consisting of the 2010 song releases.
+
+How many observations (songs) are in the training set?
+```{r}
+df_train<- df[df$year<2010,]
+df_test<- df[df$year==2010,]
+dim(df_train)
+```
+
+Problem 2.2 - Creating our Prediction Model
+2.0 points possible (graded)
+In this problem, our outcome variable is "Top10" - we are trying to predict whether or not a song will make it to the Top 10 of the Billboard Hot 100 Chart. Since the outcome variable is binary, we will build a logistic regression model. We'll start by using all song attributes as our independent variables, which we'll call Model 1.
+
+We will only use the variables in our dataset that describe the numerical attributes of the song in our logistic regression model. So we won't use the variables "year", "songtitle", "artistname", "songID" or "artistID".
+
+We have seen in the lecture that, to build the logistic regression model, we would normally explicitly input the formula including all the independent variables in R. However, in this case, this is a tedious amount of work since we have a large number of independent variables.
+
+There is a nice trick to avoid doing so. Let's suppose that, except for the outcome variable Top10, all other variables in the training set are inputs to Model 1. Then, we can use the formula
+
+SongsLog1 = glm(Top10 ~ ., data=SongsTrain, family=binomial)
+
+to build our model. Notice that the "." is used in place of enumerating all the independent variables. (Also, keep in mind that you can choose to put quotes around binomial, or leave out the quotes. R can understand this argument either way.)
+
+However, in our case, we want to exclude some of the variables in our dataset from being used as independent variables ("year", "songtitle", "artistname", "songID", and "artistID"). To do this, we can use the following trick. First define a vector of variable names called nonvars - these are the variables that we won't use in our model.
+
+nonvars = c("year", "songtitle", "artistname", "songID", "artistID")
+
+To remove these variables from your training and testing sets, type the following commands in your R console:
+
+SongsTrain = SongsTrain[ , !(names(SongsTrain) %in% nonvars) ]
+
+SongsTest = SongsTest[ , !(names(SongsTest) %in% nonvars) ]
+
+Now, use the glm function to build a logistic regression model to predict Top10 using all of the other variables as the independent variables. You should use SongsTrain to build the model.
+
+Looking at the summary of your model, what is the value of the Akaike Information Criterion (AIC)?
+
+```{r}
+
+nonvars = c("year", "songtitle", "artistname", "songID", "artistID")
+df_train<-df_train %>% select(-one_of(nonvars))
+df_test<-df_test %>%select(-one_of(nonvars))
+model1<- glm(Top10 ~ .,data=df_train,family = 'binomial')
+summary(model1)
+```
+Problem 2.3 - Creating Our Prediction Model
+1 point possible (graded)
+Let's now think about the variables in our dataset related to the confidence of the time signature, key and tempo (timesignature_confidence, key_confidence, and tempo_confidence). Our model seems to indicate that these confidence variables are significant (rather than the variables timesignature, key and tempo themselves). What does the model suggest?
+
+
+```{r}
+cor(df_train)['loudness','energy']
+```
+
+Problem 3.2 - Beware of Multicollinearity Issues!
+1 point possible (graded)
+Create Model 2, which is Model 1 without the independent variable "loudness". This can be done with the following command:
+
+SongsLog2 = glm(Top10 ~ . - loudness, data=SongsTrain, family=binomial)
+
+We just subtracted the variable loudness. We couldn't do this with the variables "songtitle" and "artistname", because they are not numeric variables, and we might get different values in the test set that the training set has never seen. But this approach (subtracting the variable from the model formula) will always work when you want to remove numeric variables.
+
+Look at the summary of SongsLog2, and inspect the coefficient of the variable "energy". What do you observe?
+```{r}
+model2<- glm(Top10~.-loudness,data=df_train,family = binomial)
+summary(model2)
+```
+Problem 3.3 - Beware of Multicollinearity Issues!
+1 point possible (graded)
+Now, create Model 3, which should be exactly like Model 1, but without the variable "energy".
+
+Look at the summary of Model 3 and inspect the coefficient of the variable "loudness". Remembering that higher loudness and energy both occur in songs with heavier instrumentation, do we make the same observation about the popularity of heavy instrumentation as we did with Model 2?
+
+```{r}
+model3<- glm(Top10~.-energy,data=df_train,family = binomial)
+summary(model3)
+```
+Problem 4.1 - Validating Our Model
+2.0 points possible (graded)
+Make predictions on the test set using Model 3. What is the accuracy of Model 3 on the test set, using a threshold of 0.45? (Compute the accuracy as a number between 0 and 1.)
+```{r}
+prediction1<- predict(model3,newdata = df_test,type='response')
+table(df_test$Top10,prediction1>0.45)
+(309+19)/(309+5+40+19)
+
+```
+Problem 4.2 - Validating Our Model
+1 point possible (graded)
+Let's check if there's any incremental benefit in using Model 3 instead of a baseline model. Given the difficulty of guessing which song is going to be a hit, an easier model would be to pick the most frequent outcome (a song is not a Top 10 hit) for all songs. What would the accuracy of the baseline model be on the test set? (Give your answer as a number between 0 and 1.)
+```{r}
+(309+5)/(309+5+40+19)
+```
+roblem 4.3 - Validating Our Model
+2 points possible (graded)
+It seems that Model 3 gives us a small improvement over the baseline model. Still, does it create an edge?
+
+Let's view the two models from an investment perspective. A production company is interested in investing in songs that are highly likely to make it to the Top 10. The company's objective is to minimize its risk of financial losses attributed to investing in songs that end up unpopular.
+
+A competitive edge can therefore be achieved if we can provide the production company a list of songs that are highly likely to end up in the Top 10. We note that the baseline model does not prove useful, as it simply does not label any song as a hit. Let us see what our model has to offer.
+
+How many songs does Model 3 correctly predict as Top 10 hits in 2010 (remember that all songs in 2010 went into our test set), using a threshold of 0.45?
+
+Problem 4.4 - Validating Our Model
+2 points possible (graded)
+What is the sensitivity of Model 3 on the test set, using a threshold of 0.45?
+
+
+  unanswered  
+What is the specificity of Model 3 on the test set, using a threshold of 0.45?
+
+```{r}
+table(df_test$Top10,prediction1>0.45)
+19/(40+19)
+309/(309+5)
+
+# Prediction function
+ROCRpred = prediction(prediction1, df_test$Top10)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+
+```
+
+
+```{r}
+
+```
+
