@@ -172,4 +172,44 @@ table(fram_test$TenYearCHD,prediction1>0.5)
 ```
 Compare with Baseline
 
+```r
+mean(fram_test$TenYearCHD)
+```
+
+```
+## [1] 0.1650943
+```
+
+```r
+mean(prediction1,na.rm=TRUE)
+```
+
+```
+## [1] 0.1473585
+```
+
+```r
+fram_test %>% summarise_each(funs(sum(is.na(.)))) %>% gather() %>% filter(value>0)
+```
+
+```
+##          key value
+## 1  education    43
+## 2 cigsPerDay    10
+## 3     BPMeds    16
+## 4    totChol    15
+## 5        BMI     7
+## 6    glucose   140
+```
+
+
+```r
+table(is.na(prediction1))
+```
+
+```
+## 
+## FALSE  TRUE 
+##  1277   207
+```
 

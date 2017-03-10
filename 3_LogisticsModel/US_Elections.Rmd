@@ -1,11 +1,10 @@
 ---
 title: "US Elections"
 output:
-  html_document: default
-  html_notebook: default
-editor_options:
-  chunk_output_type: inline
+  html_document:
+    keep_md: true
 ---
+
 
 ```{r}
 library(ggplot2)
@@ -73,6 +72,25 @@ str(predict1)
 ```{r}
 # Prediction function
 ROCRpred = prediction(predict1, df_train$Republican)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+
+```{r}
+model2<-glm(Republican~PropR+SurveyUSA,data=df_train,family = binomial)
+summary(model2)
+predict2<-predict(model2,newdata=df_test,type = 'response')
+str(predict2)
+# Prediction function
+ROCRpred = prediction(predict2, df_test$Republican)
 
 auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
 auc
