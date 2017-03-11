@@ -35,3 +35,8 @@ Get the number of NA per row :
 ```{r}
 rowSums(is.na(df))
 ```
+Convert a model summary into a data.frame :
+```{r}
+require(broom)
+df<-tidy(model1)
+```
