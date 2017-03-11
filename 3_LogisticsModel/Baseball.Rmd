@@ -1,0 +1,136 @@
+---
+title: "Predicting the Baseball World Series Champion (OPTIONAL)"
+output:
+  html_document:
+    keep_md: true
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(mice)
+library(broom)
+library(ggcorrplot)
+df<- read.csv('baseball.csv')
+
+str(df)
+
+```
+Problem 1.1 - Limiting to Teams Making the Playoffs
+0 points possible (ungraded)
+Each row in the baseball dataset represents a team in a particular year.
+
+How many team/year pairs are there in the whole dataset?
+```{r}
+
+df %>% group_by(Team,Year) %>% summarise(n()) %>% nrow()
+```
+Problem 1.2 - Limiting to Teams Making the Playoffs
+0 points possible (ungraded)
+Though the dataset contains data from 1962 until 2012, we removed several years with shorter-than-usual seasons. Using the table() function, identify the total number of years included in this dataset.
+
+```{r}
+df %>% group_by(Year) %>% summarise(n()) %>% nrow()
+```
+Problem 1.3 - Limiting to Teams Making the Playoffs
+0 points possible (ungraded)
+Because we're only analyzing teams that made the playoffs, use the subset() function to replace baseball with a data frame limited to teams that made the playoffs (so your subsetted data frame should still be called "baseball"). How many team/year pairs are included in the new dataset?
+```{r}
+df_playoff <- df %>% filter(Playoffs==1)
+PlayoffTable <- df_playoff %>% group_by(Year) %>% summarise(NumCompetitors=n()) %>% arrange(desc(NumCompetitors)) 
+PlayoffTable
+PlayoffTable %>% group_by(NumCompetitors) %>% summarise(n())
+```
+Problem 2.1 - Adding an Important Predictor
+0 points possible (ungraded)
+It's much harder to win the World Series if there are 10 teams competing for the championship versus just two. Therefore, we will add the predictor variable NumCompetitors to the baseball data frame. NumCompetitors will contain the number of total teams making the playoffs in the year of a particular team/year pair. For instance, NumCompetitors should be 2 for the 1962 New York Yankees, but it should be 8 for the 1998 Boston Red Sox.
+
+We start by storing the output of the table() function that counts the number of playoff teams from each year:
+
+PlayoffTable = table(baseball$Year)
+
+You can output the table with the following command:
+
+PlayoffTable
+
+We will use this stored table to look up the number of teams in the playoffs in the year of each team/year pair.
+
+Just as we can use the names() function to get the names of a data frame's columns, we can use it to get the names of the entries in a table. What best describes the output of names(PlayoffTable)?
+```{r}
+names(PlayoffTable)
+```
+```{r}
+df_playoff <- merge(PlayoffTable,df_playoff, by=c('Year'='Year'))
+
+str(df_playoff)
+
+```
+
+Problem 2.4 - Adding an Important Predictor
+0 points possible (ungraded)
+Add the NumCompetitors variable to your baseball data frame. How many playoff team/year pairs are there in our dataset from years where 8 teams were invited to the playoffs?
+```{r}
+df_playoff %>% filter(NumCompetitors==8) %>% nrow()
+```
+Problem 3.1 - Bivariate Models for Predicting World Series Winner
+0 points possible (ungraded)
+In this problem, we seek to predict whether a team won the World Series; in our dataset this is denoted with a RankPlayoffs value of 1. Add a variable named WorldSeries to the baseball data frame, by typing the following command in your R console:
+
+baseball$WorldSeries = as.numeric(baseball$RankPlayoffs == 1)
+
+WorldSeries takes value 1 if a team won the World Series in the indicated year and a 0 otherwise. How many observations do we have in our dataset where a team did NOT win the World Series?
+```{r}
+df_playoff<-df_playoff %>% mutate(WorldSeries = ifelse(RankPlayoffs==1,1,0) )
+table(df_playoff$WorldSeries)
+```
+Problem 3.2 - Bivariate Models for Predicting World Series Winner
+0 points possible (ungraded)
+When we're not sure which of our variables are useful in predicting a particular outcome, it's often helpful to build bivariate models, which are models that predict the outcome using a single independent variable. Which of the following variables is a significant predictor of the WorldSeries variable in a bivariate logistic regression model? To determine significance, remember to look at the stars in the summary output of the model. We'll define an independent variable as significant if there is at least one star at the end of the coefficients row for that variable (this is equivalent to the probability column having a value smaller than 0.05). Note that you have to build 12 models to answer this question! Use the entire dataset baseball to build the models. (Select all that apply.)
+```{r}
+
+colo <- setdiff(colnames(df_playoff),c('Team','League','Playoffs','RankPlayoffs','G','WorldSeries' ))
+
+for (c in colo){
+  
+  formula <- as.formula(paste("WorldSeries ~ ", c))
+  
+  model1<-glm(formula,data=df_playoff,family=binomial)
+  print(summary(model1)$coef[,'Pr(>|z|)'])
+}
+
+
+
+```
+Problem 4.1 - Multivariate Models for Predicting World Series Winner
+0 points possible (ungraded)
+In this section, we'll consider multivariate models that combine the variables we found to be significant in bivariate models. Build a model using all of the variables that you found to be significant in the bivariate models. How many variables are significant in the combined model?
+```{r}
+
+model1<- glm(WorldSeries~Year+NumCompetitors + RankSeason + RA,data=df_playoff,family=binomial)
+summary(model1)
+df_playoff_no_na <- df_playoff %>% na.omit()
+
+str(df_playoff_no_na)
+model0<- glm(WorldSeries~.-Team-League - Playoffs - RankPlayoffs- G ,data=df_playoff_no_na,family=binomial)
+stepped_model <-step(model0,trace = FALSE)
+summary(stepped_model)
+
+```
+```{r}
+df_playoff_no_string<- df_playoff %>% select(-one_of(c("Team","League","Playoffs"))) %>% na.omit()
+str(df_playoff_no_string)
+corr <- round(cor(df_playoff_no_string),1)
+corr
+# Plot
+ggcorrplot(corr, hc.order = TRUE, 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 3, 
+           method="circle", 
+           colors = c("tomato2", "white", "springgreen3"), 
+           title="Correlogram of Polls", 
+           ggtheme=theme_bw)
+```
+
