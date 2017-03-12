@@ -1,0 +1,99 @@
+---
+title: "Supreme Court"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+```
+```{r}
+df<-read.csv('stevens.csv')
+dim(df)
+set.seed(3000)
+
+splt = sample.split(df$Reverse,SplitRatio = 0.7)
+df_train <- df[splt,]
+df_test <- df[!splt,]
+
+str(df_train)
+dim(df_test)
+
+```
+```{r}
+StevensTree<- rpart(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst,data=df_train,method='class',minbucket=25)
+summary(StevensTree)
+```
+
+
+```{r}
+prp(StevensTree)
+```
+```{r}
+Prediction1<- predict(StevensTree,newdata=df_test,type='class')
+PredictionROC <- predict(StevensTree,newdata=df_test)
+dim(df_test)
+dim(PredictionROC)
+table(df_test$Reverse,Prediction1)
+```
+```{r}
+# Prediction function
+ROCRpred = prediction(PredictionROC[,2], df_test$Reverse)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+```{r}
+StevensTree2<- rpart(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst,data=df_train,method='class',minbucket=5)
+summary(StevensTree2)
+prp(StevensTree2)
+```
+```{r}
+StevensTree3<- rpart(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst,data=df_train,method='class',minbucket=100)
+summary(StevensTree3)
+prp(StevensTree3)
+```
+
+```{r}
+df_train$Reverse = as.factor(df_train$Reverse)
+df_test$Reverse = as.factor(df_test$Reverse)
+RDF<- randomForest::randomForest(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst,data=df_train,nodesize=25, ntree=200)
+summary(RDF)
+predictionRDF<- predict(RDF,newdata = df_test)
+table(df_test$Reverse,predictionRDF)
+
+```
+```{r}
+set.seed(100)
+RDF_100<- randomForest::randomForest(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst, data=df_train,nodesize=25,ntrees=200)
+prediction_100<-predict(RDF_100,newdata= df_test)
+table(df_test$Reverse,prediction_100)
+(42+75)/(42+35+75+18)
+```
+
+
+
+ 
+```{r}
+
+```
+
+
