@@ -1,0 +1,20 @@
+---
+title: "Understanding why people vote"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+
+```

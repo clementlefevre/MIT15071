@@ -18,11 +18,69 @@ library(rpart)
 library(rpart.plot)
 library(randomForest)
 library(e1071)
+library(ggmap)
 ```
 
 ```{r}
 df<-read.csv('boston.csv')
 str(df)
-
+plot(LAT~LON,df)
+```
+Use LAT and LON for Linear regression
+```{r}
+lm1<-lm(MEDV ~LAT+LON, data=df)
+df<-df %>% arrange(MEDV)
+df<- df %>% mutate(prediction_lm1= predict(lm1,df))
+plot((df$MEDV-predict(lm1,df))/df$MEDV*100)
+summary(lm1)
+```
+Using Regression Tree
+```{r}
+treeLatLon <- rpart(MEDV ~ LAT+LON, data=df)
+prp(treeLatLon)
+```
+```{r}
+df_MEDV_median_over<- df%>% filter(MEDV > median(MEDV))
+df_MEDV_median_under<- df%>% filter(MEDV < median(MEDV))
+dim(df_MEDV_median_over)
+str(df_MEDV_median_over)
 ```
 
+```{r}
+
+
+boston <- ggmap(get_map(location = 'Boston', zoom = 10))
+```
+
+```{r}
+summary(df$LON)
+summary(df$LAT)
+mit_coord<-data.frame(LON=-71.0991298,LAT=42.359858)
+sbbox <- make_bbox(lon = df$LON, lat = df$LAT ,f=.1)
+sbbox
+sqmap <- get_map(location = sbbox, source = "google")
+ggmap(sqmap) +geom_point(data=mit_coord,aes(LON,LAT),size=1,color='red') +geom_point(data = df,  mapping=aes(x =LON, y= LAT),shape=1,color='blue') 
+
+
+```
+Wonderful ! The projection used in the dataset seems to be UTM19N instead of WGS84 used by Google.
+See :http://gis.stackexchange.com/questions/148048/projection-of-boston-housing-data
+use proj4 to convert coordinates.
+
+
+Compare Linear Regression with Regression Tree:
+```{r}
+set.seed(123)
+split = sample.split(df$MEDV, SplitRatio = 0.7)
+train = subset(df, split==TRUE)
+test = subset(df, split==FALSE)
+
+# Create linear regression
+linreg = lm(MEDV ~ LAT + LON + CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO, data=train)
+summary(linreg)
+
+# Make predictions
+linreg.pred = predict(linreg, newdata=test)
+linreg.sse = sum((linreg.pred - test$MEDV)^2)
+linreg.sse
+```
