@@ -1,0 +1,105 @@
+---
+title: "Claims"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+
+library(e1071)
+```
+
+```{r}
+df<-read.csv('ClaimsData.csv')
+```
+
+```{r}
+set.seed(88)
+
+splt = sample.split(df$bucket2009,SplitRatio = 0.6)
+df_train <- df[splt,]
+df_test <- df[!splt,]
+
+mean(df_train$age)
+unique(df_train$diabetes)
+sum(df_train$diabetes)/nrow(df_train)
+```
+Compute Smart Baseline (bucket2009 == bucket2008)
+```{r}
+baseline <- df_test$bucket2008==df_test$bucket2009
+sum(baseline)/nrow(df_test)
+table(df_test$bucket2009,df_test$bucket2008)
+```
+Create Penalty matrix
+```{r}
+# Penalty Matrix
+PenaltyMatrix <- matrix(c(0,1,2,3,4,2,0,1,2,3,4,2,0,1,2,6,4,2,0,1,8,6,4,2,0), byrow=TRUE, nrow=5)
+PenaltyMatrix 
+
+```
+
+Multiply Classification Matrix * Penalty Matrix
+```{r}
+CM <-as.matrix(table(df_test$bucket2009,df_test$bucket2008))
+product1<-CM * PenaltyMatrix
+product2<- PenaltyMatrix *CM
+
+product1
+product2
+
+
+sum(product1)/nrow(df_test)
+```
+With most frequent bucket as Baseline
+```{r}
+df_test$simple_baseline<-1
+CM_simple_baseline <-table(df_test$bucket2009,df_test$simple_baseline)
+122978/ nrow(df_test)
+
+CM_simple_baseline<- cbind(CM_simple_baseline,cbind(matrix(0, nrow = 5, ncol = 4)))
+CM_simple_baseline
+sum(CM_simple_baseline * PenaltyMatrix) / nrow(df_test)
+```
+```{r}
+ClaimsTree = rpart(bucket2009 ~ age + alzheimers + arthritis + cancer + copd + depression + diabetes + heart.failure + ihd + kidney + osteoporosis + stroke + bucket2008 + reimbursement2008, data=df_train, method="class", cp=0.00005)
+prp(ClaimsTree)
+
+
+```
+
+```{r}
+prediction<- predict(ClaimsTree,newdata = df_test,type='class')
+CM<-table(df_test$bucket2009,prediction)
+CM
+sum(diag(CM))/sum(CM)
+sum(CM*PenaltyMatrix)/nrow(df_test)
+```
+
+
+Add Loss
+```{r}
+model_loss<-rpart(bucket2009 ~ age + alzheimers + arthritis + cancer + copd + depression + diabetes + heart.failure + ihd + kidney + osteoporosis + stroke + bucket2008 + reimbursement2008, data =df_train, method = 'class', cp=0.00005, parms = list(loss=PenaltyMatrix) )
+```
+Compute accuracy and Penalty
+```{r}
+
+prediction_loss <- predict(model_loss, newdata=df_test, type = 'class')
+CM_loss <- table(df_test$bucket2009,prediction_loss)
+CM_loss
+PenaltyMatrix
+sum(diag(CM_loss))/nrow(df_test)
+sum(CM_loss*PenaltyMatrix)/nrow(df_test)
+```
+

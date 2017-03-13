@@ -17,6 +17,8 @@ library(caTools)
 library(rpart)
 library(rpart.plot)
 library(randomForest)
+
+library(e1071)
 ```
 ```{r}
 df<-read.csv('stevens.csv')
@@ -84,16 +86,54 @@ table(df_test$Reverse,predictionRDF)
 ```{r}
 set.seed(100)
 RDF_100<- randomForest::randomForest(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst, data=df_train,nodesize=25,ntrees=200)
-prediction_100<-predict(RDF_100,newdata= df_test)
-table(df_test$Reverse,prediction_100)
-(42+75)/(42+35+75+18)
+prediction<-predict(RDF_100,newdata= df_test)
+c_m<-data.frame(table(df_test$Reverse,prediction))
+
+c_m <- c_m %>% spread(prediction,Freq) 
+total <- c_m %>% select(2:3) %>% sum(.)
+TP <- c_m[2,3]
+TN<-c_m[1,2]
+FP<-c_m[2,2]
+FN<-c_m[1,3]
+accuracy <- (TP+TN)/total
+accuracy
 ```
 
 
 
  
 ```{r}
+set.seed(200)
+RDF_100<- randomForest::randomForest(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst, data=df_train,nodesize=25,ntrees=200)
+prediction<-predict(RDF_100,newdata= df_test)
 
+c_m<-data.frame(table(df_test$Reverse,prediction))
+table(df_test$Reverse,prediction)
+
+c_m <- c_m %>% spread(prediction,Freq) 
+total <- c_m %>% select(2:3) %>% sum(.)
+TP <- c_m[2,3]
+TN<-c_m[1,2]
+FP<-c_m[2,2]
+FN<-c_m[1,3]
+accuracy <- (TP+TN)/total
+accuracy
 ```
 
+
+
+```{r}
+numFolds = trainControl(method='CV',number=10)
+cpGrid = expand.grid(.cp=seq(.01,.5,.01))
+model1<-train(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst, data=df_train,method="rpart",trControl=numFolds,tuneGrid=cpGrid)
+model1
+
+```
+```{r}
+modelCV <- rpart(Reverse~Circuit+Issue+Petitioner+Respondent+LowerCourt+Unconst, data=df_train, method='class',cp=.18)
+predictionCV <- predict(modelCV, newdata=df_test,type='class')
+table(df_test$Reverse,predictionCV)
+(59+64)/(sum(table(df_test$Reverse,predictionCV)))
+prp(modelCV)
+```
 

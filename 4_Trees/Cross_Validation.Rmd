@@ -1,0 +1,19 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+```{r}
+library(caret)
+library(e1071)
+```
+
+```{r}
+numFolds = trainControl(method='CV',number = 10)
+cpGrid = expand.grid(.cp=seq(.01,.05,.01))
+train(Rever)
+```
+

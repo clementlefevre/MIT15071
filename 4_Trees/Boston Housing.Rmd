@@ -1,0 +1,28 @@
+---
+title: "Boston Housing"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(e1071)
+```
+
+```{r}
+df<-read.csv('boston.csv')
+str(df)
+
+```
+
