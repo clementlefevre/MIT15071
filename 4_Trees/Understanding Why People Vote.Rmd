@@ -18,3 +18,38 @@ library(rpart)
 library(rpart.plot)
 
 ```
+Problem 1.1 - Exploration and Logistic Regression
+1 point possible (graded)
+We will first get familiar with the data. Load the CSV file gerber.csv into R. What proportion of people in this dataset voted in this election?
+```{r}
+df<-read.csv('gerber.csv')
+df<-tibble::rownames_to_column(data.frame(df),'indexo')
+df$indexo <- as.integer(df$indexo)
+head(df)
+sum(df$voting==1)/nrow(df)
+```
+Problem 1.2 - Exploration and Logistic Regression
+1 point possible (graded)
+Which of the four "treatment groups" had the largest percentage of people who actually voted (voting = 1)?
+
+
+Civic Duty
+Hawthorne Effect
+Self
+Neighbors
+```{r}
+per_group <-df %>% gather("group","is_group",5:8) %>% filter(is_group>0)
+per_group  %>% arrange(indexo) %>% group_by(group,voting) %>% summarise(total = n()) %>% spread(voting,total) %>% setNames(c('group',"did_not_vote", "voted")) %>% mutate(ratio = voted/(did_not_vote+voted)*100) %>% arrange(ratio)
+```
+Problem 1.3 - Exploration and Logistic Regression
+1 point possible (graded)
+Build a logistic regression model for voting using the four treatment group variables as the independent variables (civicduty, hawthorne, self, and neighbors). Use all the data to build the model (DO NOT split the data into a training set and testing set). Which of the following coefficients are significant in the logistic regression model? Select all that apply.
+
+
+Civic Duty
+Hawthorne Effect
+Self
+Neighbors
+```{r}
+logModel1
+```

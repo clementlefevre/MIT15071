@@ -19,7 +19,9 @@ library(rpart.plot)
 library(randomForest)
 library(e1071)
 library(ggmap)
+library(proj4)
 ```
+
 
 ```{r}
 df<-read.csv('boston.csv')
@@ -46,26 +48,20 @@ dim(df_MEDV_median_over)
 str(df_MEDV_median_over)
 ```
 
-```{r}
 
 
-boston <- ggmap(get_map(location = 'Boston', zoom = 10))
-```
 
 ```{r}
-summary(df$LON)
-summary(df$LAT)
-mit_coord<-data.frame(LON=-71.0991298,LAT=42.359858)
-sbbox <- make_bbox(lon = df$LON, lat = df$LAT ,f=.1)
-sbbox
-sqmap <- get_map(location = sbbox, source = "google")
-ggmap(sqmap) +geom_point(data=mit_coord,aes(LON,LAT),size=1,color='red') +geom_point(data = df,  mapping=aes(x =LON, y= LAT),shape=1,color='blue') 
+
+sqmap <- get_map(location = 'Boston', source = "google")
+ggmap(sqmap) +geom_point(data = df,  aes(x =LON, y= LAT),shape=1,color='blue') 
 
 
 ```
 Wonderful ! The projection used in the dataset seems to be UTM19N instead of WGS84 used by Google.
 See :http://gis.stackexchange.com/questions/148048/projection-of-boston-housing-data
-use proj4 to convert coordinates.
+use proj4 to convert coordinates. 
+Tried it, did not work, does not seem to be UTM 19N coordinates.
 
 
 Compare Linear Regression with Regression Tree:
@@ -84,3 +80,6 @@ linreg.pred = predict(linreg, newdata=test)
 linreg.sse = sum((linreg.pred - test$MEDV)^2)
 linreg.sse
 ```
+
+
+
