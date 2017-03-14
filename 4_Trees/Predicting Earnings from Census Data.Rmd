@@ -16,6 +16,7 @@ library(ROCR)
 library(caTools)
 library(rpart)
 library(rpart.plot)
+library(e1071)
 
 ```
 ```{r}
@@ -143,7 +144,6 @@ Then, make predictions using this model on the entire test set. What is the accu
 
 ```{r}
 set.seed(1)
-
 trainSmall = df_train[sample(nrow(df_train), 2000), ]
 set.seed(1)
 RDF<-randomForest::randomForest(over50k ~.,data=trainSmall)
@@ -157,3 +157,76 @@ sum(diag(CM))/sum(CM)
 
 ```
 
+Problem 3.2 - A Random Forest Model
+1 point possible (graded)
+As we discussed in lecture, random forest models work by building a large collection of trees. As a result, we lose some of the interpretability that comes with CART in terms of seeing how predictions are made and which variables are important. However, we can still compute metrics that give us insight into which variables are important.
+
+One metric that we can look at is the number of times, aggregated over all of the trees in the random forest model, that a certain variable is selected for a split. To view this metric, run the following lines of R code (replace "MODEL" with the name of your random forest model):
+
+vu = varUsed(MODEL, count=TRUE)
+
+vusorted = sort(vu, decreasing = FALSE, index.return = TRUE)
+
+dotchart(vusorted$x, names(MODEL$forest$xlevels[vusorted$ix]))
+
+This code produces a chart that for each variable measures the number of times that variable was selected for splitting (the value on the x-axis). Which of the following variables is the most important in terms of the number of splits?
+```{r}
+vu = randomForest::varUsed(RDF, count=TRUE)
+vusorted = sort(vu, decreasing = FALSE, index.return = TRUE)
+
+dotchart(vusorted$x, names(RDF$forest$xlevels[vusorted$ix]))
+```
+Problem 3.3 - A Random Forest Model
+1 point possible (graded)
+A different metric we can look at is related to "impurity", which measures how homogenous each bucket or leaf of the tree is. In each tree in the forest, whenever we select a variable and perform a split, the impurity is decreased. Therefore, one way to measure the importance of a variable is to average the reduction in impurity, taken over all the times that variable is selected for splitting in all of the trees in the forest. To compute this metric, run the following command in R (replace "MODEL" with the name of your random forest model):
+
+varImpPlot(MODEL)
+
+Which one of the following variables is the most important in terms of mean reduction in impurity?
+
+
+```{r}
+randomForest::varImpPlot(RDF)
+```
+Problem 4.1 - Selecting cp by Cross-Validation
+1 point possible (graded)
+We now conclude our study of this data set by looking at how CART behaves with different choices of its parameters.
+
+Let us select the cp parameter for our CART model using k-fold cross validation, with k = 10 folds. Do this by using the train function. Set the seed beforehand to 2. Test cp values from 0.002 to 0.1 in 0.002 increments, by using the following command:
+
+cartGrid = expand.grid( .cp = seq(0.002,0.1,0.002))
+
+Also, remember to use the entire training set "train" when building this model. The train function might take some time to run.
+
+Which value of cp does the train function recommend?
+```{r}
+set.seed(2)
+# Number of folds
+tr.control = trainControl(method = "cv", number = 10)
+
+# cp values
+cartGrid = expand.grid( .cp = seq(.002,0.1,.002))
+
+
+
+# Cross-validation
+tr = train(over50k ~.,data=df_train, method = "rpart", trControl = tr.control, tuneGrid = cartGrid)
+# Extract tree
+best.tree = tr$finalModel
+prp(best.tree)
+
+```
+Problem 4.2 - Selecting cp by Cross-Validation
+2.0 points possible (graded)
+Fit a CART model to the training data using this value of cp. What is the prediction accuracy on the test set?
+```{r}
+CART_MODEL_CV<- rpart(over50k~.,data=df_train,cp=0.002)
+prediction_CART_CV<-predict(CART_MODEL_CV,newdata = df_test,type='class')
+head(prediction_CART_CV)
+CM<-table(df_test$over50k,prediction_CART_CV)
+print('Confusion Matrix')
+CM
+print('Accuracy')
+sum(diag(CM))/sum(CM)
+prp(CART_MODEL_CV)
+```

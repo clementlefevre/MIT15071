@@ -1,0 +1,21 @@
+---
+title: "State Data Revisted (OPTIONAL)"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(e1071)
+
+```
