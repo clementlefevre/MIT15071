@@ -51,5 +51,37 @@ Hawthorne Effect
 Self
 Neighbors
 ```{r}
-logModel1
+logModel1 <- glm(voting~civicduty+hawthorne+self+neighbors, data=df, family = binomial)
+summary(logModel1)
+CM<-table(df$voting,predict(logModel1,df,type='response')>0.3)
+sum(diag(CM))/sum(CM)
+CM<-table(df$voting,predict(logModel1,df,type='response')>0.5)
+sum(diag(CM))/sum(CM)
 ```
+Compute Baselin
+```{r}
+
+ROCRpred = prediction(predict(logModel1,df,type='response'), df$voting)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+Problem 2.1 - Trees
+1 point possible (graded)
+We will now try out trees. Build a CART tree for voting using all data and the same four treatment variables we used before. Don't set the option method="class" - we are actually going to create a regression tree here. We are interested in building a tree to explore the fraction of people who vote, or the probability of voting. We’d like CART to split our groups if they have different probabilities of voting. If we used method=‘class’, CART would only split if one of the groups had a probability of voting above 50% and the other had a probability of voting less than 50% (since the predicted outcomes would be different). However, with regression trees, CART will split even if both groups have probability less than 50%.
+
+Leave all the parameters at their default values. You can use the following command in R to build the tree:
+
+CARTmodel = rpart(voting ~ civicduty + hawthorne + self + neighbors, data=gerber)
+Plot the tree. What happens, and if relevant, why?
+
+
+```{r}
+
+```
+
