@@ -18,4 +18,96 @@ library(rpart)
 library(rpart.plot)
 library(e1071)
 
+data(state)
+df = data.frame(state.x77)
+
+```
+Problem 1.1 - Linear Regression Models
+0 points possible (ungraded)
+Let's recreate the linear regression models we made in the previous homework question. First, predict Life.Exp using all of the other variables as the independent variables (Population, Income, Illiteracy, Murder, HS.Grad, Frost, Area ). Use the entire dataset to build the model.
+
+What is the adjusted R-squared of the model?
+```{r}
+lm<-lm(Life.Exp~.,data=df)
+summary(lm)
+```
+Problem 1.2 - Linear Regression Models
+0 points possible (ungraded)
+Calculate the sum of squared errors (SSE) between the predicted life expectancies using this model and the actual life expectancies:
+```{r}
+sum((lm$residuals)^2)
+```
+Problem 1.3 - Linear Regression Models
+0 points possible (ungraded)
+Build a second linear regression model using just Population, Murder, Frost, and HS.Grad as independent variables (the best 4 variable model from the previous homework). What is the adjusted R-squared for this model?
+```{r}
+lm2<-lm(Life.Exp ~Population + Murder +  Frost+ HS.Grad,data=df)
+summary(lm2)
+sum(lm2$residuals^2)
+```
+Problem 2.1 - CART Models
+0 points possible (ungraded)
+Let's now build a CART model to predict Life.Exp using all of the other variables as independent variables (Population, Income, Illiteracy, Murder, HS.Grad, Frost, Area). We'll use the default minbucket parameter, so don't add the minbucket argument. Remember that in this problem we are not as interested in predicting life expectancies for new observations as we are understanding how they relate to the other variables we have, so we'll use all of the data to build our model. You shouldn't use the method="class" argument since this is a regression tree.
+
+Plot the tree. Which of these variables appear in the tree? Select all that apply.
+```{r}
+CART_model<- rpart(Life.Exp~.,data=df)
+prp(CART_model)
+```
+Problem 2.2 - CART Models
+0 points possible (ungraded)
+Use the regression tree you just built to predict life expectancies (using the predict function), and calculate the sum-of-squared-errors (SSE) like you did for linear regression. What is the SSE?
+
+```{r}
+prediction_CART_1<-predict(CART_model)
+sum((prediction_CART_1-df$Life.Exp)^2)
+```
+
+```{r}
+CART_model<- rpart(Life.Exp~.,data=df,minbucket=5)
+prp(CART_model)
+prediction_CART_1<-predict(CART_model)
+sum((prediction_CART_1-df$Life.Exp)^2)
+```
+
+Problem 2.6 - CART Models
+0 points possible (ungraded)
+Can we do even better? Create a tree that predicts Life.Exp using only Area, with the minbucket parameter to 1. What is the SSE of this newest tree?
+```{r}
+CART_model_Area<- rpart(Life.Exp~Area,data=df,minbucket=1)
+prp(CART_model_Area)
+prediction_CART_1<-predict(CART_model_Area)
+sum((prediction_CART_1-df$Life.Exp)^2)
+```
+Problem 3.1 - Cross-validation
+0 points possible (ungraded)
+Adjusting the variables included in a linear regression model is a form of model tuning. In Problem 1 we showed that by removing variables in our linear regression model (tuning the model), we were able to maintain the fit of the model while using a simpler model. A rule of thumb is that simpler models are more interpretable and generalizeable. We will now tune our regression tree to see if we can improve the fit of our tree while keeping it as simple as possible.
+
+Load the caret library, and set the seed to 111. Set up the controls exactly like we did in the lecture (10-fold cross-validation) with cp varying over the range 0.01 to 0.50 in increments of 0.01. Use the train function to determine the best cp value for a CART model using all of the available independent variables, and the entire dataset statedata. What value of cp does the train function recommend? (Remember that the train function tells you to pick the largest value of cp with the lowest error when there are ties, and explains this at the bottom of the output.)
+```{r}
+set.seed(111)
+
+tr.control = trainControl(method = "cv", number = 10)
+
+# cp values
+cartGrid = expand.grid( .cp = seq(.01,0.5,.01))
+
+
+
+# Cross-validation
+tr = train(Life.Exp ~.,data=df, method = "rpart", trControl = tr.control, tuneGrid = cartGrid)
+# Extract tree
+best.tree = tr$finalModel
+prp(best.tree)
+best.tree$cptable
+best.tree$tuneValue
+```
+Problem 3.2 - Cross-Validation
+0 points possible (ungraded)
+Create a tree with the value of cp you found in the previous problem, all of the available independent variables, and the entire dataset "statedata" as the training data. Then plot the tree. You'll notice that this is actually quite similar to the first tree we created with the initial model. Interpret the tree: we predict the life expectancy to be 70 if the murder rate is greater than or equal to
+```{r}
+CART_tuned<-rpart(Life.Exp~.,data=df,cp=0.12)
+prp(CART_tuned)
+prediction_tuned<-predict(CART_tuned)
+sum((prediction_tuned-df$Life.Exp)^2)
 ```
