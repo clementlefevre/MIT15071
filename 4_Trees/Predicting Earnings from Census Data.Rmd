@@ -1,0 +1,159 @@
+---
+title: "Predicting Earnings from Census Data"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(ROCR)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+
+```
+```{r}
+df<-read.csv('census.csv')
+str(df)
+```
+Problem 1.1 - A Logistic Regression Model
+1 point possible (graded)
+Let's begin by building a logistic regression model to predict whether an individual's earnings are above $50,000 (the variable "over50k") using all of the other variables as independent variables. First, read the dataset census.csv into R.
+
+Then, split the data randomly into a training set and a testing set, setting the seed to 2000 before creating the split. Split the data so that the training set contains 60% of the observations, while the testing set contains 40% of the observations.
+
+Next, build a logistic regression model to predict the dependent variable "over50k", using all of the other variables in the dataset as independent variables. Use the training set to build the model.
+
+Which variables are significant, or have factors that are significant? (Use 0.1 as your significance threshold, so variables with a period or dot in the stars column should be counted too. You might see a warning message here - you can ignore it and proceed. This message is a warning that we might be overfitting our model to the training set.) Select all that apply.
+
+
+```{r}
+set.seed(2000)
+
+
+splt = sample.split(df$over50k,SplitRatio = 0.6)
+df_train <- df[splt,]
+df_test <- df[!splt,]
+
+lm1<-glm(over50k~.,data=df_train,family=binomial)
+summary(lm1)
+```
+Problem 1.2 - A Logistic Regression Model
+2.0 points possible (graded)
+What is the accuracy of the model on the testing set? Use a threshold of 0.5. (You might see a warning message when you make predictions on the test set - you can safely ignore it.
+```{r}
+prediction_lm_test<- predict(lm1,newdata = df_test,type='response')
+head(prediction_lm_test)
+CM<-table(df_test$over50k,prediction_lm_test>0.5)
+print('Confusion Matrix')
+CM
+print('Accuracy')
+sum(diag(CM))/sum(CM)
+```
+Problem 1.3 - A Logistic Regression Model
+1 point possible (graded)
+What is the baseline accuracy for the testing set?
+
+```{r}
+table(df_test$over50k)
+9713/sum(table(df_test$over50k))
+```
+Problem 1.4 - A Logistic Regression Model
+2.0 points possible (graded)
+What is the area-under-the-curve (AUC) for this model on the test set?
+```{r}
+# Prediction function
+ROCRpred = prediction(prediction_lm_test, df_test$over50k)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+Problem 2.1 - A CART Model
+2.0 points possible (graded)
+We have just seen how the logistic regression model for this data achieves a high accuracy. Moreover, the significances of the variables give us a way to gauge which variables are relevant for this prediction task. However, it is not immediately clear which variables are more important than the others, especially due to the large number of factor variables in this problem.
+
+Let us now build a classification tree to predict "over50k". Use the training set to build the model, and all of the other variables as independent variables. Use the default parameters, so don't set a value for minbucket or cp. Remember to specify method="class" as an argument to rpart, since this is a classification problem. After you are done building the model, plot the resulting tree.
+
+How many splits does the tree have in total?
+```{r}
+CART_model<- rpart(over50k ~.,data=df_train,method='class')
+prp(CART_model)
+```
+Problem 2.4 - A CART Model
+2.0 points possible (graded)
+What is the accuracy of the model on the testing set? Use a threshold of 0.5. (You can either add the argument type="class", or generate probabilities and use a threshold of 0.5 like in logistic regression.)
+
+```{r}
+prediction_CART<- predict(CART_model,newdata = df_test,type='class')
+head(prediction_CART)
+CM<-table(df_test$over50k,prediction_CART)
+print('Confusion Matrix')
+CM
+print('Accuracy')
+sum(diag(CM))/sum(CM)
+
+```
+
+Problem 2.5 - A CART Model
+1 point possible (graded)
+Let us now consider the ROC curve and AUC for the CART model on the test set. You will need to get predicted probabilities for the observations in the test set to build the ROC curve and compute the AUC. Remember that you can do this by removing the type="class" argument when making predictions, and taking the second column of the resulting object.
+
+Plot the ROC curve for the CART model you have estimated. Observe that compared to the logistic regression ROC curve, the CART ROC curve is less smooth than the logistic regression ROC curve. Which of the following explanations for this behavior is most correct? (HINT: Think about what the ROC curve is plotting and what changing the threshold does.)
+```{r}
+prediction_CART_prob<- predict(CART_model,newdata = df_test,type='prob')
+
+# Prediction function
+ROCRpred = prediction(prediction_CART_prob[,2], df_test$over50k)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+
+```
+Problem 3.1 - A Random Forest Model
+2.0 points possible (graded)
+Before building a random forest model, we'll down-sample our training set. While some modern personal computers can build a random forest model on the entire training set, others might run out of memory when trying to train the model since random forests is much more computationally intensive than CART or Logistic Regression. For this reason, before continuing we will define a new training set to be used when building our random forest model, that contains 2000 randomly selected obervations from the original training set. Do this by running the following commands in your R console (assuming your training set is called "train"):
+
+set.seed(1)
+
+trainSmall = train[sample(nrow(train), 2000), ]
+
+Let us now build a random forest model to predict "over50k", using the dataset "trainSmall" as the data used to build the model. Set the seed to 1 again right before building the model, and use all of the other variables in the dataset as independent variables. (If you get an error that random forest "can not handle categorical predictors with more than 32 categories", re-build the model without the nativecountry variable as one of the independent variables.)
+
+Then, make predictions using this model on the entire test set. What is the accuracy of the model on the test set, using a threshold of 0.5? (Remember that you don't need a "type" argument when making predictions with a random forest model if you want to use a threshold of 0.5. Also, note that your accuracy might be different from the one reported here, since random forest models can still differ depending on your operating system, even when the random seed is set. )
+
+```{r}
+set.seed(1)
+
+trainSmall = df_train[sample(nrow(df_train), 2000), ]
+set.seed(1)
+RDF<-randomForest::randomForest(over50k ~.,data=trainSmall)
+prediction_RDF_test<-predict(RDF,newdata = df_test,type='prob')
+head(prediction_RDF_test)
+CM<-table(df_test$over50k,prediction_RDF_test[,2]>.5)
+print('Confusion Matrix')
+CM
+print('Accuracy')
+sum(diag(CM))/sum(CM)
+
+```
+
