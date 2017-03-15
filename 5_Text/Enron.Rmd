@@ -1,0 +1,113 @@
+---
+title: "Enron"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(tm)
+library(SnowballC)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(ROCR)
+```
+
+```{r}
+df<-read.csv('Unit5_1/energy_bids.csv')
+colnames(df)
+             
+```
+
+```{r}
+strwrap(df$email[1])
+```
+```{r}
+table(df$responsive)
+```
+
+## Preprocess corpus ##
+```{r}
+corpus <- Corpus(VectorSource(df$email))
+corpus[[1]]$content
+
+
+# Convert to lower-case
+
+corpus = tm_map(corpus, content_transformer(tolower))
+
+corpus[[1]]$content
+
+# Remove punctuation
+
+corpus = tm_map(corpus, removePunctuation)
+
+corpus[[1]]$content
+
+# Look at stop words 
+stopwords("english")[1:10]
+
+# Remove stopwords and apple
+
+corpus = tm_map(corpus, removeWords, c("apple", stopwords("english")))
+
+corpus[[1]]$content
+
+# Stem document 
+
+corpus = tm_map(corpus, stemDocument)
+
+corpus[[1]]$content
+```
+
+## SparseMatrix ##
+```{r}
+dtm <- DocumentTermMatrix(corpus)
+dtm
+findFreqTerms(dtm,lowfreq =1000)
+dtm<-removeSparseTerms(dtm,sparse = 0.97)
+dtm
+labeledTerms<-as.data.frame(as.matrix(dtm))
+labeledTerms$responsive <- df$responsive
+str(labeledTerms)
+
+```
+## Create an CART Model ##
+```{r}
+set.seed(144)
+
+splt = sample.split(labeledTerms$responsive,SplitRatio = 0.7)
+df_train <- labeledTerms[splt,]
+df_test <- labeledTerms[!splt,]
+
+CART_model <- rpart(responsive~ .,data=df_train, method='class')
+prp(CART_model)
+prediction_CART<-predict(CART_model,newdata=df_test)
+
+CM<-table(df_test$responsive,prediction_CART[,2]>0.5)
+CM
+sum(diag(CM))/sum(CM)
+```
+```{r}
+# Prediction function
+ROCRpred = prediction(prediction_CART[,2], df_test$responsive)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+

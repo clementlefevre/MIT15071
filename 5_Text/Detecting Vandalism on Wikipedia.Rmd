@@ -1,0 +1,20 @@
+---
+title: "Detecting Vandalism on Wikipedia"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(tm)
+library(SnowballC)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+```
