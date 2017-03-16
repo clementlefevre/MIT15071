@@ -17,4 +17,265 @@ library(SnowballC)
 library(caTools)
 library(rpart)
 library(rpart.plot)
+Sys.setlocale("LC_ALL", "C")
+
 ```
+
+```{r}
+df<-read.csv('Unit5_1/wiki.csv', stringsAsFactors=FALSE)
+df$Vandal<-as.factor(df$Vandal)
+table(df$Vandal)
+```
+
+Problem 1.2 - Bags of Words
+2.0 points possible (graded)
+We will now use the bag of words approach to build a model. We have two columns of textual data, with different meanings. For example, adding rude words has a different meaning to removing rude words. We'll start like we did in class by building a document term matrix from the Added column. The text already is lowercase and stripped of punctuation. So to pre-process the data, just complete the following four steps:
+
+1) Create the corpus for the Added column, and call it "corpusAdded".
+
+2) Remove the English-language stopwords.
+
+3) Stem the words.
+
+4) Build the DocumentTermMatrix, and call it dtmAdded.
+
+If the code length(stopwords("english")) does not return 174 for you, then please run the line of code in this file, which will store the standard stop words in a variable called sw. When removing stop words, use tm_map(corpusAdded, removeWords, sw) instead of tm_map(corpusAdded, removeWords, stopwords("english")).
+
+How many terms appear in dtmAdded?
+```{r}
+corpusAdded <- Corpus(VectorSource(df$Added))
+corpusAdded[[1]]$content
+
+# Remove stopwords and apple
+corpusAdded = tm_map(corpusAdded, removeWords, stopwords("english"))
+
+corpusAdded[[1]]$content
+
+# Stem document 
+
+corpusAdded = tm_map(corpusAdded, stemDocument)
+
+dtmAdded <- DocumentTermMatrix(corpusAdded)
+dtmAdded
+
+```
+Problem 1.3 - Bags of Words
+1 point possible (graded)
+Filter out sparse terms by keeping only terms that appear in 0.3% or more of the revisions, and call the new matrix sparseAdded. How many terms appear in sparseAdded?
+```{r}
+findFreqTerms(dtmAdded,lowfreq =1000)
+
+sparseAdded<-removeSparseTerms(dtmAdded,0.997)
+sparseAdded
+
+#clean column names (always do when using text as dataframe columns)
+
+colnames(sparseAdded)<- make.names(colnames(sparseAdded))
+
+
+wordsAdded<-as.data.frame(as.matrix(sparseAdded))
+
+colnames(wordsAdded) = paste("A", colnames(wordsAdded))
+
+head(wordsAdded)
+```
+
+```{r}
+corpusRemoved <- Corpus(VectorSource(df$Removed))
+corpusRemoved[[1]]$content
+# Remove stopwords and apple
+corpusRemoved = tm_map(corpusRemoved, removeWords, stopwords("english"))
+
+corpusRemoved[[1]]$content
+
+# Stem document 
+
+corpusRemoved = tm_map(corpusRemoved, stemDocument)
+
+dtmRemoved <- DocumentTermMatrix(corpusRemoved)
+corpusRemoved
+```
+
+```{r}
+sparseRemoved<-removeSparseTerms(dtmRemoved,0.997)
+sparseRemoved
+
+#clean column names (always do when using text as dataframe columns)
+
+colnames(sparseRemoved)<- make.names(colnames(sparseRemoved))
+
+
+wordsRemoved<-as.data.frame(as.matrix(sparseRemoved))
+
+colnames(wordsRemoved) = paste("R", colnames(wordsRemoved))
+
+str(wordsRemoved)
+```
+Problem 1.5 - Bags of Words
+2.0 points possible (graded)
+Combine the two data frames into a data frame called wikiWords with the following line of code:
+
+wikiWords = cbind(wordsAdded, wordsRemoved)
+
+The cbind function combines two sets of variables for the same observations into one data frame. Then add the Vandal column (HINT: remember how we added the dependent variable back into our data frame in the Twitter lecture). Set the random seed to 123 and then split the data set using sample.split from the "caTools" package to put 70% in the training set.
+
+What is the accuracy on the test set of a baseline method that always predicts "not vandalism" (the most frequent outcome)?
+```{r}
+wikiWords = cbind(wordsAdded, wordsRemoved)
+wikiWords$Vandal <- df$Vandal
+
+set.seed(123)
+
+splt = sample.split(wikiWords$Vandal,SplitRatio = 0.7)
+df_train <- wikiWords[splt,]
+df_test <- wikiWords[!splt,]
+
+table(df_test$Vandal)
+618/(618+545)
+```
+ Problem 1.6 - Bags of Words
+2.0 points possible (graded)
+Build a CART model to predict Vandal, using all of the other variables as independent variables. Use the training set to build the model and the default parameters (don't set values for minbucket or cp).
+
+What is the accuracy of the model on the test set, using a threshold of 0.5? (Remember that if you add the argument type="class" when making predictions, the output of predict will automatically use a threshold of 0.5.)
+
+```{r}
+CART_Model <- rpart(Vandal~.,data=df_train)
+prediction_CART <- predict(CART_Model,newdata=df_test)
+CM<- table(df_test$Vandal,prediction_CART[,2]>0.5)
+CM
+sum(diag(CM))/sum(CM)
+```
+
+Problem 1.7 - Bags of Words
+1 point possible (graded)
+Plot the CART tree. How many word stems does the CART model use?
+```{r}
+prp(CART_Model)
+```
+Problem 2.1 - Problem-specific Knowledge
+1 point possible (graded)
+We weren't able to improve on the baseline using the raw textual information. More specifically, the words themselves were not useful. There are other options though, and in this section we will try two techniques - identifying a key class of words, and counting words.
+
+The key class of words we will use are website addresses. "Website addresses" (also known as URLs - Uniform Resource Locators) are comprised of two main parts. An example would be "http://www.google.com". The first part is the protocol, which is usually "http" (HyperText Transfer Protocol). The second part is the address of the site, e.g. "www.google.com". We have stripped all punctuation so links to websites appear in the data as one word, e.g. "httpwwwgooglecom". We hypothesize that given that a lot of vandalism seems to be adding links to promotional or irrelevant websites, the presence of a web address is a sign of vandalism.
+
+We can search for the presence of a web address in the words added by searching for "http" in the Added column. The grepl function returns TRUE if a string is found in another string, e.g.
+
+grepl("cat","dogs and cats",fixed=TRUE) # TRUE
+
+grepl("cat","dogs and rats",fixed=TRUE) # FALSE
+
+Create a copy of your dataframe from the previous question:
+
+wikiWords2 = wikiWords
+
+Make a new column in wikiWords2 that is 1 if "http" was in Added:
+
+wikiWords2$HTTP = ifelse(grepl("http",wiki$Added,fixed=TRUE), 1, 0)
+
+Based on this new column, how many revisions added a link?
+```{r}
+wikiWords2<-wikiWords
+wikiWords2$HTTP <- ifelse(grepl("http",df$Added,fixed=TRUE), 1, 0)
+sum(wikiWords2$HTTP)
+```
+Problem 2.2 - Problem-Specific Knowledge
+2.0 points possible (graded)
+In problem 1.5, you computed a vector called "spl" that identified the observations to put in the training and testing sets. Use that variable (do not recompute it with sample.split) to make new training and testing sets:
+
+wikiTrain2 = subset(wikiWords2, spl==TRUE)
+
+wikiTest2 = subset(wikiWords2, spl==FALSE)
+
+Then create a new CART model using this new variable as one of the independent variables.
+
+What is the new accuracy of the CART model on the test set, using a threshold of 0.5?
+```{r}
+wikiTrain2 = subset(wikiWords2, splt==TRUE)
+
+wikiTest2 = subset(wikiWords2, splt==FALSE)
+
+CART_Model <- rpart(Vandal~.,data=wikiTrain2)
+prediction_CART <- predict(CART_Model,newdata=wikiTest2)
+CM<- table(wikiTest2$Vandal,prediction_CART[,2]>0.5)
+CM
+sum(diag(CM))/sum(CM)
+```
+Problem 2.3 - Problem-Specific Knowledge
+1 point possible (graded)
+Another possibility is that the number of words added and removed is predictive, perhaps more so than the actual words themselves. We already have a word count available in the form of the document-term matrices (DTMs).
+
+Sum the rows of dtmAdded and dtmRemoved and add them as new variables in your data frame wikiWords2 (called NumWordsAdded and NumWordsRemoved) by using the following commands:
+
+wikiWords2$NumWordsAdded = rowSums(as.matrix(dtmAdded))
+
+wikiWords2$NumWordsRemoved = rowSums(as.matrix(dtmRemoved))
+
+What is the average number of words added?
+```{r}
+wikiWords2$NumWordsAdded = rowSums(as.matrix(dtmAdded))
+wikiWords2$NumWordsRemoved = rowSums(as.matrix(dtmRemoved))
+
+mean(wikiWords2$NumWordsAdded)
+```
+Problem 2.4 - Problem-Specific Knowledge
+2.0 points possible (graded)
+In problem 1.5, you computed a vector called "spl" that identified the observations to put in the training and testing sets. Use that variable (do not recompute it with sample.split) to make new training and testing sets with wikiWords2. Create the CART model again (using the training set and the default parameters).
+
+What is the new accuracy of the CART model on the test set?
+```{r}
+wikiTrain2 = subset(wikiWords2, splt==TRUE)
+
+wikiTest2 = subset(wikiWords2, splt==FALSE)
+
+CART_Model <- rpart(Vandal~.,data=wikiTrain2)
+prediction_CART <- predict(CART_Model,newdata=wikiTest2)
+CM<- table(wikiTest2$Vandal,prediction_CART[,2]>0.5)
+CM
+sum(diag(CM))/sum(CM)
+
+```
+Problem 3.1 - Using Non-Textual Data
+2.0 points possible (graded)
+We have two pieces of "metadata" (data about data) that we haven't yet used. Make a copy of wikiWords2, and call it wikiWords3:
+
+wikiWords3 = wikiWords2
+
+Then add the two original variables Minor and Loggedin to this new data frame:
+
+wikiWords3$Minor = wiki$Minor
+
+wikiWords3$Loggedin = wiki$Loggedin
+
+In problem 1.5, you computed a vector called "spl" that identified the observations to put in the training and testing sets. Use that variable (do not recompute it with sample.split) to make new training and testing sets with wikiWords3.
+
+Build a CART model using all the training data. What is the accuracy of the model on the test set?
+
+```{r}
+wikiWords3 = wikiWords2
+wikiWords3$Minor = df$Minor
+wikiWords3$Loggedin = df$Loggedin
+
+wikiTrain3 = subset(wikiWords3, splt==TRUE)
+
+wikiTest3 = subset(wikiWords3, splt==FALSE)
+
+CART_Model <- rpart(Vandal~.,data=wikiTrain3)
+prediction_CART <- predict(CART_Model,newdata=wikiTest3)
+CM<- table(wikiTest3$Vandal,prediction_CART[,2]>0.5)
+CM
+sum(diag(CM))/sum(CM)
+
+
+
+```
+Problem 3.2 - Using Non-Textual Data
+1 point possible (graded)
+There is a substantial difference in the accuracy of the model using the meta data. Is this because we made a more complicated model?
+
+Plot the CART tree. How many splits are there in the tree?
+
+```{r}
+prp(CART_Model)
+```
+

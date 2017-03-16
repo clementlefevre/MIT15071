@@ -1,0 +1,251 @@
+---
+title: "Automating Reviews in Medicine"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(tm)
+library(SnowballC)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(ROCR)
+Sys.setlocale("LC_ALL", "C")
+
+```
+Problem 1.1 - Loading the Data
+1 point possible (graded)
+Load clinical_trial.csv into a data frame called trials (remembering to add the argument stringsAsFactors=FALSE), and investigate the data frame with summary() and str().
+
+IMPORTANT NOTE: Some students have been getting errors like "invalid multibyte string" when performing certain parts of this homework question. If this is happening to you, use the argument fileEncoding="latin1" when reading in the file with read.csv. This should cause those errors to go away.
+
+We can use R's string functions to learn more about the titles and abstracts of the located papers. The nchar() function counts the number of characters in a piece of text. Using the nchar() function on the variables in the data frame, answer the following questions:
+
+How many characters are there in the longest abstract? (Longest here is defined as the abstract with the largest number of characters.)
+```{r}
+trials<-read.csv('Unit5_1/clinical_trial.csv',stringsAsFactors=FALSE)
+
+strwrap(trials[which.max(nchar(trials$abstract)),]$abstract)
+
+
+```
+Problem 1.2 - Loading the Data
+1 point possible (graded)
+How many search results provided no abstract? (HINT: A search result provided no abstract if the number of characters in the abstract field is zero.)
+```{r}
+table(nchar(trials$abstract)==0)
+```
+Problem 1.3 - Loading the Data
+1 point possible (graded)
+Find the observation with the minimum number of characters in the title (the variable "title") out of all of the observations in this dataset. What is the text of the title of this article? Include capitalization and punctuation in your response, but don't include the quotes.
+
+```{r}
+trials[which.min(nchar(trials$title)),]
+```
+
+Problem 2.1 - Preparing the Corpus
+4.0 points possible (graded)
+Because we have both title and abstract information for trials, we need to build two corpera instead of one. Name them corpusTitle and corpusAbstract.
+
+Following the commands from lecture, perform the following tasks (you might need to load the "tm" package first if it isn't already loaded). Make sure to perform them in this order.
+
+1) Convert the title variable to corpusTitle and the abstract variable to corpusAbstract.
+
+2) Convert corpusTitle and corpusAbstract to lowercase. After performing this step, remember to run the lines:
+
+corpusTitle = tm_map(corpusTitle, PlainTextDocument)
+
+corpusAbstract = tm_map(corpusAbstract, PlainTextDocument)
+
+3) Remove the punctuation in corpusTitle and corpusAbstract.
+
+4) Remove the English language stop words from corpusTitle and corpusAbstract.
+
+5) Stem the words in corpusTitle and corpusAbstract (each stemming might take a few minutes).
+
+6) Build a document term matrix called dtmTitle from corpusTitle and dtmAbstract from corpusAbstract.
+
+7) Limit dtmTitle and dtmAbstract to terms with sparseness of at most 95% (aka terms that appear in at least 5% of documents).
+
+8) Convert dtmTitle and dtmAbstract to data frames (keep the names dtmTitle and dtmAbstract).
+
+If the code length(stopwords("english")) does not return 174 for you, then please run the line of code in this file, which will store the standard stop words in a variable called sw. When removing stop words, use tm_map(corpusTitle, removeWords, sw) and tm_map(corpusAbstract, removeWords, sw) instead of tm_map(corpusTitle, removeWords, stopwords("english")) and tm_map(corpusAbstract, removeWords, stopwords("english")).
+
+How many terms remain in dtmTitle after removing sparse terms (aka how many columns does it have)?
+
+
+  unanswered  
+How many terms remain in dtmAbstract?
+
+```{r}
+corpusMaker<- function(df,feature){
+corpus <- Corpus(VectorSource(df[,feature]))
+corpus[[1]]$content
+
+corpus = tm_map(corpus, content_transformer(tolower))
+
+corpus[[1]]$content
+
+# Remove punctuation
+
+corpus = tm_map(corpus, removePunctuation)
+
+
+
+
+# Remove stopwords and apple
+corpus = tm_map(corpus, removeWords, stopwords("english"))
+
+corpus[[1]]$content
+
+# Stem document 
+
+corpus = tm_map(corpus, stemDocument)
+
+dtm <- DocumentTermMatrix(corpus)
+
+dtm<- removeSparseTerms(dtm,sparse = .95)
+
+dtm<-as.data.frame(as.matrix(dtm))
+colnames(dtm)<- make.names(colnames(dtm))
+
+return( dtm)
+  
+}
+
+dtmTitle<-corpusMaker(trials,'title')
+dtmAbstract<- corpusMaker(trials,'abstract')
+
+str(dtmTitle)
+str(dtmAbstract)
+
+```
+Problem 2.3 - Preparing the Corpus
+1 point possible (graded)
+What is the most frequent word stem across all the abstracts? Hint: you can use colSums() to compute the frequency of a word across all the abstracts.
+```{r}
+dtmAbstract %>% summarise_all(funs(max(.))) %>% rowwise() %>% which.max()
+```
+Problem 3.1 - Building a model
+1 point possible (graded)
+We want to combine dtmTitle and dtmAbstract into a single data frame to make predictions. However, some of the variables in these data frames have the same names. To fix this issue, run the following commands:
+
+colnames(dtmTitle) = paste0("T", colnames(dtmTitle))
+
+colnames(dtmAbstract) = paste0("A", colnames(dtmAbstract))
+
+What was the effect of these functions?
+
+
+```{r}
+colnames(dtmTitle) = paste0("T", colnames(dtmTitle))
+
+colnames(dtmAbstract) = paste0("A", colnames(dtmAbstract))
+
+```
+
+Problem 3.2 - Building a Model
+1 point possible (graded)
+Using cbind(), combine dtmTitle and dtmAbstract into a single data frame called dtm:
+
+dtm = cbind(dtmTitle, dtmAbstract)
+
+As we did in class, add the dependent variable "trial" to dtm, copying it from the original data frame called trials. How many columns are in this combined data frame?
+```{r}
+dtm<- cbind(dtmTitle,dtmAbstract)
+dim(dtm)
+
+dtm$trial <- trials$trial
+```
+Problem 3.3 - Building a Model
+1 point possible (graded)
+Now that we have prepared our data frame, it's time to split it into a training and testing set and to build regression models. Set the random seed to 144 and use the sample.split function from the caTools package to split dtm into data frames named "train" and "test", putting 70% of the data in the training set.
+
+What is the accuracy of the baseline model on the training set? (Remember that the baseline model predicts the most frequent outcome in the training set for all observations.)
+
+```{r}
+set.seed(144)
+
+splt = sample.split(dtm$trial,SplitRatio = 0.7)
+df_train <- dtm[splt,]
+df_test <- dtm[!splt,]
+table(df_train$trial)
+730/(730+572)
+```
+Problem 3.4 - Building a Model
+2.0 points possible (graded)
+Build a CART model called trialCART, using all the independent variables in the training set to train the model, and then plot the CART model. Just use the default parameters to build the model (don't add a minbucket or cp value). Remember to add the method="class" argument, since this is a classification problem.
+
+What is the name of the first variable the model split on?
+
+```{r}
+CART<- rpart(trial~.,data=df_train,method='class')
+prp(CART)
+```
+Problem 3.5 - Building a Model
+1 point possible (graded)
+Obtain the training set predictions for the model (do not yet predict on the test set). Extract the predicted probability of a result being a trial (recall that this involves not setting a type argument, and keeping only the second column of the predict output). What is the maximum predicted probability for any result?
+```{r}
+prediction<-predict(CART)
+max(prediction[,2])
+```
+Problem 3.7 - Building a Model
+3 points possible (graded)
+For these questions, use a threshold probability of 0.5 to predict that an observation is a clinical trial.
+
+What is the training set accuracy of the CART model?
+
+
+  unanswered  
+What is the training set sensitivity of the CART model?
+
+
+  unanswered  
+What is the training set specificity of the CART model?
+```{r}
+CM<-table(prediction[,2]>0.5,df_train$trial)
+CM
+sum(diag(CM))/sum(CM)
+recall_sensitivity<- 441 /(441+131)
+recall_sensitivity
+specificity<- 631/(631+99)
+specificity
+```
+Problem 4.1 - Evaluating the model on the testing set
+2.0 points possible (graded)
+Evaluate the CART model on the testing set using the predict function and creating a vector of predicted probabilities predTest.
+
+What is the testing set accuracy, assuming a probability threshold of 0.5 for predicting that a result is a clinical trial?
+```{r}
+prediction_test<-predict(CART,newdata = df_test)
+CM<-table(df_test$trial,prediction_test[,2]>0.5)
+sum(diag(CM))/sum(CM)
+```
+Problem 4.2 - Evaluating the Model on the Testing Set
+2.0 points possible (graded)
+Using the ROCR package, what is the testing set AUC of the prediction model?
+
+```{r}
+# Prediction function
+ROCRpred = prediction(prediction_test[,2], df_test$trial)
+
+auc.tmp <- performance(ROCRpred,"auc"); auc <- as.numeric(auc.tmp@y.values)
+auc
+
+# Performance function
+ROCRperf = performance(ROCRpred, "tpr", "fpr")
+
+
+# Add threshold labels 
+plot(ROCRperf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+
