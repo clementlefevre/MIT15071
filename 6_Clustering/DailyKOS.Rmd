@@ -1,0 +1,96 @@
+---
+title: "Daily KOS"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(flexclust)
+```
+
+Problem 1.1 - Hierarchical Clustering
+1 point possible (graded)
+Let's start by building a hierarchical clustering model. First, read the data set into R. Then, compute the distances (using method="euclidean"), and use hclust to build the model (using method="ward.D"). You should cluster on all of the variables.
+
+Running the dist function will probably take you a while. Why? Select all that apply.
+
+
+We have a lot of observations, so it takes a long time to compute the distance between each pair of observations.
+We have a lot of variables, so the distance computation is long.
+Our variables have a wide range of values, so the distances are more complicated.
+The euclidean distance is known to take a long time to compute, regardless of the size of the data.
+unanswered
+Submit
+```{r}
+df<-read.csv('Unit6/dailykos.csv')
+head(df)
+distance<- dist(df, method='euclidian')
+
+```
+```{r}
+clusterKOS<- hclust(distance,method='ward.D')
+plot(clusterKOS)
+rect.hclust(clusterKOS, k = 7)
+```
+Problem 1.4 - Hierarchical Clustering
+3 points possible (graded)
+Let's pick 7 clusters. This number is reasonable according to the dendrogram, and also seems reasonable for the application. Use the cutree function to split your data into 7 clusters.
+
+Now, we don't really want to run tapply on every single variable when we have over 1,000 different variables. Let's instead use the subset function to subset our data by cluster. Create 7 new datasets, each containing the observations from one of the clusters.
+
+How many observations are in cluster 3?
+```{r}
+clusterTree<- cutree(clusterKOS,k=7)
+clusterTree
+df$h_cluster<-clusterTree
+
+head(df[ncol(df)])
+
+```
+```{r}
+cluster_list = list()
+for (cluster in (1:7)){
+  head(df)
+  sub_df<- df %>% filter(h_cluster==cluster)
+  cluster_name <- paste(c('group',cluster),collapse = '_')
+  head(sub_df)
+  cluster_list[[cluster_name]]<-sub_df
+
+  
+}
+
+```
+
+```{r}
+for (cluster in cluster_list){
+  print(class(cluster))
+}
+```
+Problem 1.5 - Hierarchical Clustering
+1 point possible (graded)
+Instead of looking at the average value in each variable individually, we'll just look at the top 6 words in each cluster. To do this for cluster 1, type the following in your R console (where "HierCluster1" should be replaced with the name of your first cluster subset):
+
+tail(sort(colMeans(HierCluster1)))
+
+This computes the mean frequency values of each of the words in cluster 1, and then outputs the 6 words that occur the most frequently. The colMeans function computes the column (word) means, the sort function orders the words in increasing order of the mean values, and the tail function outputs the last 6 words listed, which are the ones with the largest column means.
+
+What is the most frequent word in this cluster, in terms of average value? Enter the word exactly how you see it in the output:
+
+```{r}
+for (cluster in (1:7)){
+ 
+  cluster_name <- paste(c('group',cluster),collapse = '_')
+  
+  wordCount <-cluster_list[[cluster_name]] %>% summarise_each(funs(sum)) %>% gather(noum,sum,-h_cluster)
+  
+  wordCount <-wordCount %>% arrange(desc(sum))
+  print(wordCount[1:6,])
+}
+```
+
+

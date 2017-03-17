@@ -399,3 +399,9 @@ prediction_CART<-predict(CART,newdata = df_train)
 head(prediction_CART)
 prediction_RDF<-predict(RDF,newdata=df_train,type='prob')
 head(prediction_RDF)
+```
+
+```{r}
+clusterGroup2<- cutree(clusterGroup)
+```
+

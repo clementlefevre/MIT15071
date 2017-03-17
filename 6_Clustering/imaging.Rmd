@@ -1,0 +1,93 @@
+---
+title: "imaging"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(flexclust)
+
+
+```
+
+```{r}
+df<-read.csv('Unit6/flower.csv',header = FALSE)
+
+flowers<-as.vector(as.matrix(df))
+str(flowers)
+image(as.matrix(df))
+distance<-dist(flowers, method='euclidian')
+
+```
+```{r}
+clusterIntensity<-hclust(distance,method='ward.D')
+plot(clusterIntensity)
+rect.hclust(clusterIntensity,k=3,border='red')
+```
+
+```{r}
+flowerCluster = cutree(clusterIntensity,k=3)
+str(flowerCluster)
+class(flowers)
+flowers_df<-as.data.frame(flowers)
+flowers_df$group<-flowerCluster
+head(flowers_df)
+flowers_df %>% group_by(group) %>% summarise(mean=mean(flowers))
+
+image(matrix(flowerCluster,nrow = 50,ncol = 50))
+```
+## MRI Image ##
+```{r}
+healthy_raw<- read.csv('Unit6/healthy.csv',header=FALSE)
+healthy_matrix<-as.matrix(healthy_raw)
+str(healthy_matrix)
+```
+```{r}
+image(healthy_matrix)
+```
+```{r}
+healthy_vector <- as.vector(healthy_matrix)
+str(healthy_vector)
+#distance <- dist(healthy_vector,method='euclidian')
+```
+## Hierarchichal not working !!! too many pixels. ##
+Let's try with K-Means
+```{r}
+k=5
+set.seed(1)
+KMC = kmeans(healthy_vector,centers = k,iter.max = 1000)
+head(KMC)
+healthy_cluster <-KMC$cluster
+
+healthy_df<-as.data.frame(healthy_vector)
+healthy_df$group<-healthy_cluster
+healthy_df %>% group_by(group) %>% summarise(mean=mean(healthy_vector))
+KMC$centers
+str(healthy_cluster)
+#dim(healthy_cluster)<- c(nrow(healthy_matrix),ncol(healthy_matrix))
+healthy_cluster<- matrix(healthy_cluster, nrow=nrow(healthy_matrix),ncol= ncol(healthy_matrix))
+class(healthy_cluster)
+image(healthy_cluster,axes=FALSE,col=rainbow(k))
+
+```
+```{r}
+tumor_df<-read.csv('Unit6/tumor.csv',header=FALSE)
+tumor_matrix<-as.matrix(tumor_df)
+image(tumors_matrix)
+
+tumor_vect<-as.vector(tumor_matrix)
+KMC.kcca = as.kcca(KMC, healthyVector)
+tumorClusters = predict(KMC.kcca, newdata = tumorVector)
+
+# Visualize the clusters
+dim(tumorClusters) = c(nrow(tumorMatrix), ncol(tumorMatrix))
+image(tumorClusters, axes = FALSE, col=rainbow(k))
+
+
+```
+

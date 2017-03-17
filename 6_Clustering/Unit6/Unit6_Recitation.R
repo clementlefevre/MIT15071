@@ -1,8 +1,8 @@
 # Unit 6 - Recitation
 
 # Video 2
-
-flower = read.csv("flower.csv", header=FALSE)
+getwd()
+flower = read.csv("Unit6/flower.csv", header=FALSE)
 str(flower)
 
 # Change the data type to matrix
@@ -50,7 +50,7 @@ image(flowerMatrix,axes=FALSE,col=grey(seq(0,1,length=256)))
 
 # Let's try this with an MRI image of the brain
 
-healthy = read.csv("healthy.csv", header=FALSE)
+healthy = read.csv("Unit6/healthy.csv", header=FALSE)
 healthyMatrix = as.matrix(healthy)
 str(healthyMatrix)
 
@@ -91,7 +91,7 @@ image(healthyClusters, axes = FALSE, col=rainbow(k))
 
 # Apply to a test image
  
-tumor = read.csv("tumor.csv", header=FALSE)
+tumor = read.csv("Unit6/tumor.csv", header=FALSE)
 tumorMatrix = as.matrix(tumor)
 tumorVector = as.vector(tumorMatrix)
 

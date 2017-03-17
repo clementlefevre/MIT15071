@@ -1,0 +1,91 @@
+---
+title: "netflix"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(caret)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(ROCR)
+Sys.setlocale("LC_ALL", "C")
+
+```
+
+```{r}
+movies<-read.table('u.item.txt',header=FALSE,sep="|",quote="\"")
+head(movies)
+```
+
+
+
+```{r}
+
+# Add column names
+colnames(movies) = c("ID", "Title", "ReleaseDate", "VideoReleaseDate", "IMDB", "Unknown", "Action", "Adventure", "Animation", "Childrens", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "FilmNoir", "Horror", "Musical", "Mystery", "Romance", "SciFi", "Thriller", "War", "Western")
+
+str(movies)
+
+# Remove unnecessary variables
+movies$ID = NULL
+movies$ReleaseDate = NULL
+movies$VideoReleaseDate = NULL
+movies$IMDB = NULL
+
+# Remove duplicates
+movies = unique(movies)
+
+# Take a look at our data again:
+str(movies)
+```
+```{r}
+sum((movies$Romance==1)& (movies$Drama==1)) 
+```
+
+```{r}
+
+dist<- dist(movies[2:20], method = 'euclidian')
+clusterMovie = hclust(dist,method = 'ward.D')
+plot(clusterMovie)
+
+str(dist)
+```
+```{r}
+hist(dist)
+clusterGroup <- cutree(clusterMovie,k=10)
+class(clusterGroup)
+```
+
+```{r}
+movies$group<- clusterGroup
+gathered<-movies %>% gather(genre,value, -c(Title,group))
+head(gathered)
+gathered %>% group_by(group) %>% summarise(mean = mean(value))
+gathered %>% group_by(genre,group) %>% summarise(mean = mean(value))
+gathered <-gathered %>% group_by(genre,group) %>% summarise(mean = mean(value))
+head(gathered)
+gathered %>% spread(group,mean)
+
+```
+
+
+```{r}
+clusterGroup2<- cutree(clusterMovie,k=2)
+movies$group <-clusterGroup2
+
+gathered<-movies %>% gather(genre,value, -c(Title,group))
+head(gathered)
+gathered %>% group_by(group) %>% summarise(mean = mean(value))
+gathered %>% group_by(genre,group) %>% summarise(mean = mean(value))
+gathered <-gathered %>% group_by(genre,group) %>% summarise(mean = mean(value))
+head(gathered)
+gathered %>% spread(group,mean)
+```
+
