@@ -1,0 +1,213 @@
+---
+title: "Predicting Stock Returns with Cluster-Then-Predict"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(flexclust)
+library(caret)
+library(caTools)
+```
+
+```{r}
+df<-read.csv('Unit6/StocksCluster.csv')
+str(df)
+head(df)
+```
+
+Problem 1.2 - Exploring the Dataset
+1 point possible (graded)
+What proportion of the observations have positive returns in December?
+```{r}
+table(df$PositiveDec==1)
+```
+Problem 1.4 - Exploring the Dataset
+2 points possible (graded)
+Which month (from January through November) has the largest mean return across all observations in the dataset?
+
+ unanswered  
+Which month (from January through November) has the smallest mean return across all observations in the dataset?
+
+```{r}
+df %>% summarise_each(funs(mean(.)))  %>% gather() %>% top_n(2,value)
+df %>% summarise_each(funs(mean(.))) %>% gather() %>% top_n(-1,value)
+```
+
+Problem 2.1 - Initial Logistic Regression Model
+2.0 points possible (graded)
+Run the following commands to split the data into a training set and testing set, putting 70% of the data in the training set and 30% of the data in the testing set:
+
+set.seed(144)
+
+spl = sample.split(stocks$PositiveDec, SplitRatio = 0.7)
+
+df_train = subset(stocks, spl == TRUE)
+
+df_test = subset(stocks, spl == FALSE)
+
+Then, use the stocksTrain data frame to train a logistic regression model (name it StocksModel) to predict PositiveDec using all the other variables as independent variables. Don't forget to add the argument family=binomial to your glm command.
+
+What is the overall accuracy on the training set, using a threshold of 0.5?
+```{r}
+set.seed(144)
+
+spl = sample.split(df$PositiveDec, SplitRatio = 0.7)
+
+df_train = subset(df, spl == TRUE)
+
+df_test = subset(df, spl == FALSE)
+
+StocksModel <- glm(PositiveDec~.,data=df_train,family=binomial)
+summary(StocksModel)
+prediction_train<- predict(StocksModel,type='response')
+
+CM<-table(df_train$PositiveDec,prediction_train>0.5)
+sum(diag(CM))/sum(CM)
+```
+```{r}
+prediction_test<- predict(StocksModel,newdata=df_test,type='response')
+
+CM<-table(df_test$PositiveDec,prediction_test>0.5)
+sum(diag(CM))/sum(CM)
+```
+Problem 2.3 - Initial Logistic Regression Model
+1 point possible (graded)
+What is the accuracy on the test set of a baseline model that always predicts the most common outcome (PositiveDec = 1)?
+```{r}
+CM
+(1553+344)/sum(CM)
+```
+
+```{r}
+limitedTrain = df_train
+
+limitedTrain$PositiveDec = NULL
+
+limitedTest = df_test
+
+limitedTest$PositiveDec = NULL
+
+preproc = preProcess(limitedTrain)
+
+normTrain = predict(preproc, limitedTrain)
+
+normTest = predict(preproc, limitedTest)
+
+
+
+```
+Problem 3.4 - Clustering Stocks
+1 point possible (graded)
+Set the random seed to 144 (it is important to do this again, even though we did it earlier). Run k-means clustering with 3 clusters on normTrain, storing the result in an object called km.
+
+Which cluster has the largest number of observations?
+```{r}
+set.seed(144)
+KMC<- kmeans(normTrain,centers = 3)
+table(KMC$cluster)
+
+
+```
+
+Problem 3.5 - Clustering Stocks
+1 point possible (graded)
+Recall from the recitation that we can use the flexclust package to obtain training set and testing set cluster assignments for our observations (note that the call to as.kcca may take a while to complete):
+
+library(flexclust)
+
+km.kcca = as.kcca(km, normTrain)
+
+clusterTrain = predict(km.kcca)
+
+clusterTest = predict(km.kcca, newdata=normTest)
+
+How many test-set observations were assigned to Cluster 2?
+
+```{r}
+KMC.kcca = as.kcca(KMC, normTrain)
+
+clusterTrain = predict(KMC.kcca)
+
+clusterTest = predict(KMC.kcca, newdata=normTest)
+
+table(clusterTest)
+
+df_train$cluster_prediction<-clusterTrain
+df_test$cluster_prediction<-clusterTest
+
+
+```
+Problem 4.1 - Cluster-Specific Predictions
+1 point possible (graded)
+Using the subset function, build data frames stocksTrain1, stocksTrain2, and stocksTrain3, containing the elements in the stocksTrain data frame assigned to clusters 1, 2, and 3, respectively (be careful to take subsets of stocksTrain, not of normTrain). Similarly build stocksTest1, stocksTest2, and stocksTest3 from the stocksTest data frame.
+
+Which training set data frame has the highest average value of the dependent variable?
+```{r}
+df_train1<- df_train %>% filter(cluster_prediction==1)
+df_train2<- df_train %>% filter(cluster_prediction==2)
+df_train3<- df_train %>% filter(cluster_prediction==3)
+
+df_test1<- df_test %>% filter(cluster_prediction==1)
+df_test2<- df_test %>% filter(cluster_prediction==2)
+df_test3<- df_test %>% filter(cluster_prediction==3)
+
+df_train %>% group_by(cluster_prediction) %>% summarise(dependant=mean(PositiveDec))
+
+```
+Problem 4.2 - Cluster-Specific Predictions
+2.0 points possible (graded)
+Build logistic regression models StocksModel1, StocksModel2, and StocksModel3, which predict PositiveDec using all the other variables as independent variables. StocksModel1 should be trained on stocksTrain1, StocksModel2 should be trained on stocksTrain2, and StocksModel3 should be trained on stocksTrain3.
+
+Which variables have a positive sign for the coefficient in at least one of StocksModel1, StocksModel2, and StocksModel3 and a negative sign for the coefficient in at least one of StocksModel1, StocksModel2, and StocksModel3? Select all that apply.
+```{r}
+SM1<-glm(PositiveDec~.-cluster_prediction,data=df_train1,family = binomial)
+SM2<-glm(PositiveDec~.-cluster_prediction,data=df_train2,family = binomial)
+SM3<-glm(PositiveDec~.-cluster_prediction,data=df_train3,family = binomial)
+
+summary(SM1)$coef
+summary(SM2)$coef
+summary(SM3)$coef
+
+```
+Problem 4.3 - Cluster-Specific Predictions
+6.0 points possible (graded)
+Using StocksModel1, make test-set predictions called PredictTest1 on the data frame stocksTest1. Using StocksModel2, make test-set predictions called PredictTest2 on the data frame stocksTest2. Using StocksModel3, make test-set predictions called PredictTest3 on the data frame stocksTest3.
+
+What is the overall accuracy of StocksModel1 on the test set stocksTest1, using a threshold of 0.5?
+
+
+  unanswered  
+What is the overall accuracy of StocksModel2 on the test set stocksTest2, using a threshold of 0.5?
+
+
+  unanswered  
+What is the overall accuracy of StocksModel3 on the test set stocksTest3, using a threshold of 0.5?
+
+```{r}
+
+PredictTest1 <- predict(SM1,newdata=df_test1,type='response')
+CM<-table(df_test1$PositiveDec,PredictTest1>0.5)
+CM
+sum(diag(CM))/sum(CM)
+```
+```{r}
+
+PredictTest2 <- predict(SM2,newdata=df_test2,type='response')
+CM<-table(df_test2$PositiveDec,PredictTest2>0.5)
+CM
+sum(diag(CM))/sum(CM)
+```
+
+```{r}
+
+PredictTest3 <- predict(SM3,newdata=df_test3,type='response')
+CM<-table(df_test3$PositiveDec,PredictTest3>0.5)
+CM
+sum(diag(CM))/sum(CM)
+```

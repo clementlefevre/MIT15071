@@ -60,15 +60,12 @@ for (cluster in (1:7)){
   cluster_name <- paste(c('group',cluster),collapse = '_')
   head(sub_df)
   cluster_list[[cluster_name]]<-sub_df
-
-  
 }
-
 ```
 
 ```{r}
 for (cluster in cluster_list){
-  print(class(cluster))
+  print(dim(cluster))
 }
 ```
 Problem 1.5 - Hierarchical Clustering
@@ -93,4 +90,32 @@ for (cluster in (1:7)){
 }
 ```
 
+Problem 2.1 - K-Means Clustering
+3 points possible (graded)
+Now, run k-means clustering, setting the seed to 1000 right before you run the kmeans function. Again, pick the number of clusters equal to 7. You don't need to add the iters.max argument.
+
+Subset your data into the 7 clusters (7 new datasets) by using the "cluster" variable of your kmeans output.
+
+How many observations are in Cluster 3?
+
+```{r}
+set.seed(1000)
+KCM = kmeans(df,centers = 7)
+
+```
+
+```{r}
+KCM$centers[1:7,1:3]
+dim(KCM$centers)
+
+```
+
+```{r}
+table(KCM$cluster)
+```
+```{r}
+str(clusterTree)
+str(KCM$cluster)
+table(clusterTree,KCM$cluster)
+```
 

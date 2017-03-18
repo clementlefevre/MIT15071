@@ -1,0 +1,86 @@
+---
+title: "Market Segmentation for Airlines"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(flexclust)
+library(caret)
+```
+
+```{r}
+airlines<-read.csv('Unit6/AirlinesCluster.csv')
+summary(airlines)
+```
+
+Problem 1.3 - Normalizing the Data
+2 points possible (graded)
+Let's go ahead and normalize our data. You can normalize the variables in a data frame by using the preProcess function in the "caret" package. You should already have this package installed from Week 4, but if not, go ahead and install it with install.packages("caret"). Then load the package with library(caret).
+
+Now, create a normalized data frame called "airlinesNorm" by running the following commands:
+
+preproc = preProcess(airlines)
+
+airlinesNorm = predict(preproc, airlines)
+
+The first command pre-processes the data, and the second command performs the normalization. If you look at the summary of airlinesNorm, you should see that all of the variables now have mean zero. You can also see that each of the variables has standard deviation 1 by using the sd() function.
+
+In the normalized data, which variable has the largest maximum value?
+
+
+```{r}
+preprocess<- preProcess(airlines)
+airlines_norm<-predict(preprocess,airlines)
+airlines_norm %>% summarise_all(funs(max(.))) %>% gather() %>% top_n(1)
+airlines_norm %>% summarise_all(funs(min(.))) %>% gather() %>% top_n(-1)
+```
+
+Problem 2.1 - Hierarchical Clustering
+1 point possible (graded)
+Compute the distances between data points (using euclidean distance) and then run the Hierarchical clustering algorithm (using method="ward.D") on the normalized data. It may take a few minutes for the commands to finish since the dataset has a large number of observations for hierarchical clustering.
+
+Then, plot the dendrogram of the hierarchical clustering process. Suppose the airline is looking for somewhere between 2 and 10 clusters. According to the dendrogram, which of the following is NOT a good choice for the number of clusters?
+```{r}
+distance <- dist(airlines_norm, method='euclidian')
+clusterAir<- hclust(distance,method='ward.D')
+plot(clusterAir)
+rect.hclust(clusterAir, k = 6)
+```
+Problem 2.2 - Hierarchical Clustering
+1 point possible (graded)
+Suppose that after looking at the dendrogram and discussing with the marketing department, the airline decides to proceed with 5 clusters. Divide the data points into 5 clusters by using the cutree function. How many data points are in Cluster 1?
+
+```{r}
+clusterTree<- cutree(clusterAir,k=7)
+table(clusterTree)
+```
+Problem 2.3 - Hierarchical Clustering
+2 points possible (graded)
+Now, use tapply to compare the average values in each of the variables for the 5 clusters (the centroids of the clusters). You may want to compute the average values of the unnormalized data so that it is easier to interpret. You can do this for the variable "Balance" with the following command:
+
+tapply(airlines$Balance, clusterGroups, mean)
+
+Compared to the other clusters, Cluster 1 has the largest average values in which variables (if any)? Select all that apply.
+```{r}
+airlines$group<- clusterTree
+head(airlines)
+airlines %>% group_by(group) %>% summarise_each(funs(mean(.)))
+```
+Problem 3.1 - K-Means Clustering
+1 point possible (graded)
+Now run the k-means clustering algorithm on the normalized data, again creating 5 clusters. Set the seed to 88 right before running the clustering algorithm, and set the argument iter.max to 1000.
+
+How many clusters have more than 1,000 observations?
+
+```{r}
+set.seed(88)
+KMC<- kmeans(airlines_norm,centers=5)
+table(KMC$cluster)
+```
+
