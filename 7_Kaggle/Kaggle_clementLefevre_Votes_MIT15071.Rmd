@@ -1,0 +1,88 @@
+---
+title: "Kaggle_Votes"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(xgboost)
+library(caret)
+library(mice)
+```
+
+
+Read data 
+```{r}
+
+df_train_raw<- read.csv('train2016.csv')
+df_test_raw<- read.csv('test2016.csv')
+```
+
+
+Fill missing data
+```{r}
+df_train<- mice::complete(mice(df_train_raw))
+df_test <- mice::complete(mice(df_test_raw))
+```
+Coonvert factor to numeric, using caret package DummyVars method
+
+```{r}
+df_train_only_predictors <- df_train %>% select(-Party)
+
+dummy<- dummyVars(~.,data = df_train_only_predictors,levelsOnly = FALSE)
+X_train <- predict(dummy,newdata=df_train_only_predictors)
+
+dummy<- dummyVars(~.,data = df_test,levelsOnly = FALSE)
+X_test <- predict(dummy,newdata=df_test)
+
+```
+
+Create target matrix
+
+```{r}
+y_train <- df_train %>% select(Party) %>% mutate(target=ifelse(Party=='Republican',1,0)) %>% select(target) %>% as.matrix() 
+
+```
+
+Train a model
+```{r}
+
+bst <- xgboost(data = X_train, label = y_train, 
+               max_depth = 20, eta = 1, nthread = -1, nrounds = 2, 
+               objective = "binary:logistic")
+
+
+prediction_train <- predict(bst, X_train)
+
+CM<- table(y_train,prediction_train>0.5)
+CM
+
+sum(diag(CM))/sum(CM)
+```
+
+
+Make prediction on test set :
+```{r}
+prediction_test <- predict(bst,X_test)
+
+```
+
+Generate a submission file
+
+```{r}
+PredTestLabels = as.factor(ifelse(prediction_test<0.5, "Democrat", "Republican"))
+
+# However, you can submit the file on Kaggle to see how well the model performs. You can make up to 5 submissions per day, so don't hesitate to just upload a solution to see how you did.
+
+# Let's prepare a submission file for Kaggle (for more about this, see the "Evaluation" page on the competition site):
+
+MySubmission = data.frame(USER_ID = df_test$USER_ID, Predictions = PredTestLabels)
+
+write.csv(MySubmission, "SubmissionXGB.csv", row.names=FALSE)
+```
+
