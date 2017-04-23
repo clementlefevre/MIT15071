@@ -23,7 +23,7 @@ mean(df$Info.On.Internet,na.rm = TRUE)
 ```
 
 
-Get the number of na per columns
+Get the **number of na per columns**
 ```{r}
 df%>% summarise_each(funs(sum(is.na(.)))) %>% gather()
 ```
@@ -35,8 +35,22 @@ Get the number of NA per row :
 ```{r}
 rowSums(is.na(df))
 ```
+
+Get the **ratio of NA** per columns :
+
+```{r}
+colMeans(is.na(df))
+```
+
 Convert a model summary into a data.frame :
 ```{r}
 require(broom)
 df<-tidy(model1)
 ```
+
+
+Get the max/min of each columns :
+```{r}
+max_cols<-ames_train %>% select(Lot.Area,Year.Built,Bedroom.AbvGr) %>%  summarise_each(funs(max,min))
+```
+
