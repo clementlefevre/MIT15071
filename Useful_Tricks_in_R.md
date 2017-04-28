@@ -1,4 +1,4 @@
-# Useful tricks in R
+tibble::rownames_to_column()# Useful tricks in R
 
 ```r
 library(dplyr)

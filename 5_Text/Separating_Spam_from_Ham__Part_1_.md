@@ -848,3 +848,9 @@ head(prediction_RDF)
 ## 5 0.016 0.984
 ## 6 0.010 0.990
 ```
+
+
+```r
+#clusterGroup2<- cutree(clusterGroup)
+```
+

@@ -1,56 +1,122 @@
 ---
 title: "Useful tricks in R"
-output:
-  html_document:
-    keep_md: true
+output:  github_document
 ---
 ```{r}
-
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-df<- read.csv('1_Intro/AnonymityPoll.csv')
 ```
 
-El classico : compute mean on columns and getting an **NA**
+```{r}
+df<-read.csv('1_Intro/AnonymityPoll.csv')
+```
+
+### El classico : compute mean on columns and getting an **NA**
 
 ```{r}
 mean(df$Internet.Use)
-```
-ADD na.rm=TRUE
-```{r}
+#ADD na.rm=TRUE
 mean(df$Info.On.Internet,na.rm = TRUE)
 ```
 
 
-Get the **number of na per columns**
+### Get the **number of na per columns**
 ```{r}
 df%>% summarise_each(funs(sum(is.na(.)))) %>% gather()
 ```
-Convert the index into column (useful with correlation matrix e.g)
+
+### Convert the index into column (useful with correlation matrix e.g)
 ```{r}
 tibble::rownames_to_column(data.frame(df),'indexo')
 ```
-Get the number of NA per row :
+
+### Get the number of NA per row :
 ```{r}
-rowSums(is.na(df))
+head(rowSums(is.na(df)))
 ```
 
-Get the **ratio of NA** per columns :
 
+### Get the **ratio of NA** per columns :
 ```{r}
 colMeans(is.na(df))
 ```
 
-Convert a model summary into a data.frame :
+### Convert a model summary into a data.frame :
 ```{r}
 require(broom)
-df<-tidy(model1)
+model1<-lm(Age~.,data=df %>% select_if(is.numeric))
+df_model_summary<-tidy(model1)
+head(df)
 ```
 
 
-Get the max/min of each columns :
+### Get the max/min of each columns :
 ```{r}
-max_cols<-ames_train %>% select(Lot.Area,Year.Built,Bedroom.AbvGr) %>%  summarise_each(funs(max,min))
+max_min_cols<-df %>%  select() summarise_each(funs(max,min))
+head(max_min_cols %>% gather(),5)
 ```
 
+
+### Select columns based on vector of string :
+```{r}
+select_(df2, .dots = vector_of_columns_name)
+
+```
+
+### Extract first part of string in vector :
+```{r}
+vapply(strsplit(high_skewed_features,"_"), `[`, 1, FUN.VALUE=character(1))
+```
+
+### Plot a lot of data on the same grid :
+```{r}
+library(gridExtra)
+
+plot_data_column = function (data, column){
+      p<-ggplot(data = data, aes_string(x = column)) +
+        geom_histogram(fill = "lightgreen",binwidth = .1) +
+        xlab(column)
+}
+
+myplots <- lapply(high_skewed_features, plot_data_column, data = df_skewed_features_log)
+
+
+n <- length(myplots)
+nCol <- floor(sqrt(n))
+do.call("grid.arrange", c(myplots, ncol=nCol))
+
+```
+
+### Plot a correlogramm
+```{r}
+library(ggplot2)
+library(ggcorrplot)
+corr <- round(cor(ames_train_selected_features),1)
+
+# Plot
+ggcorrplot(corr, hc.order = TRUE, 
+           type = "lower", 
+           lab = TRUE, 
+           lab_size = 2, 
+           method="square", 
+           colors = c("cyan4", "white", "red3"), 
+           title="Correlogram of Selected Features", 
+           ggtheme=theme_bw)
+```
+
+### Combine multiple columns pair-wise :
+```{r}
+
+colos_Exp<-grep('X..Voix.Exp',colnames(df_votes.2017),value = T)
+colos_name<-grep('Nom',colnames(df_votes.2017),value = T)
+colos_Voix<-grep('^Voix',colnames(df_votes.2017),value = T)
+
+
+filtered_df_pres<-df_votes.2017 %>% select_(.dots = c(colos_Exp,colos_name,colos_Voix,"Code.de.la.commune", "Libellé.de.la.commune","Code.du.département","Libellé.du.département","Votants"))
+
+gather_name<-filtered_df_pres %>% gather(key,'Nom',starts_with('Nom')) 
+gather_scores<- filtered_df_pres%>% gather(key,'Score',starts_with('X..Voix.Exp'))
+gather_voix<- filtered_df_pres%>% gather(key,'Voix',starts_with('Voix'))
+
+
+gather_name_scores<- data.frame(select(gather_scores, Score), select(gather_name,Nom,Code.de.la.commune, Libellé.de.la.commune,Code.du.département,Libellé.du.département,Votants),select(gather_voix,Voix))

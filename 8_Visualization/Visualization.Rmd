@@ -1,0 +1,27 @@
+---
+title: "Visualization"
+
+output:
+  html_document:
+    keep_md: true
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+df<-read.csv('Unit7/mvt.csv',stringsAsFactors = FALSE)
+head(df)
+```
+
+```{r}
+
+df$Date<- strptime(df$Date,format = '%m/%d%/%y %H:%M')
+df$weekday<- weekdays(df$Date)
+df$hour <- df$Date$hour
+```
+

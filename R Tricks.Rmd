@@ -1,0 +1,58 @@
+---
+title: "R Tricks for amnesics."
+output: github_document 
+
+---
+
+*Clement Lefevre 2017-04-28*
+
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+df<-read.csv('1_Intro/AnonymityPoll.csv')
+```
+
+### El classico : compute mean on columns and getting an **NA**
+
+```{r}
+mean(df$Internet.Use)
+#ADD na.rm=TRUE
+mean(df$Info.On.Internet,na.rm = TRUE)
+```
+
+
+### Get the **Percentage of NA per columns**
+```{r}
+df%>% summarise_each(funs(sum(is.na(.)/n()*100))) %>% gather()
+##or :
+colMeans(is.na(df))
+```
+
+### Convert the index into column (useful with correlation matrix e.g)
+```{r}
+head(tibble::rownames_to_column(data.frame(df),'indexo'))
+```
+
+### Get the number of NA per row :
+```{r}
+head(rowSums(is.na(df)))
+```
+
+### Convert a model summary into a data.frame :
+```{r}
+require(broom)
+model1<-lm(Age~.,data=df %>% select_if(is.numeric))
+df_model_summary<-tidy(model1)
+head(df_model_summary)
+```
+
+
+### Get the max/min of each numeric columns :
+```{r}
+max_min_cols<-df %>% select_if(is.numeric) %>% summarise_each(funs(max=max(., na.rm = TRUE),min=min(., na.rm = TRUE)))
+head(max_min_cols %>% gather())
+
+```
