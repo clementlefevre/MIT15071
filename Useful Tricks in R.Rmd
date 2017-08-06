@@ -120,3 +120,14 @@ gather_voix<- filtered_df_pres%>% gather(key,'Voix',starts_with('Voix'))
 
 
 gather_name_scores<- data.frame(select(gather_scores, Score), select(gather_name,Nom,Code.de.la.commune, Libellé.de.la.commune,Code.du.département,Libellé.du.département,Votants),select(gather_voix,Voix))
+```
+ 
+  
+## Summary of dataframe per class :
+```{r}
+print (table(sapply(df, class)))
+```
+
+
+
+
